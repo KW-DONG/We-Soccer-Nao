@@ -1,0 +1,28 @@
+#VRML_SIM R2022a utf8
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.20901537710962897 0.20901748736560585 0.9553136982725037 1.616499366847821
+  position -0.161132899771661 -18.329269487935886 8.512167384373143
+}
+TexturedBackground {
+  texture "stadium"
+}
+Robot {
+  children [
+    Emitter {
+    }
+  ]
+  name "Referee"
+  supervisor TRUE
+}
+RobocupSoccerField {
+}
+RobocupSoccerBall {
+  translation 1 0 0
+}
+DEF Player Nao {
+}
+TexturedBackgroundLight {
+  texture "stadium"
+}
