@@ -74,7 +74,10 @@ void SoccerReferee::run()
 		autoReferee();
 
 	}
-	tReceiver.join();
+	if(tReceiver.joinable())
+	{
+		tReceiver.join();
+	}
 }
 
 void SoccerReferee::readPosition()
