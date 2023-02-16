@@ -48,5 +48,5 @@ The ball becomes in play as soon as it is kicked and clearly moves.
 2.If an opposing player deliberately remains inside the penalty area, or enters the penalty area before the goal kick is taken, the goal kick is retaken.
 
 ### Infringements
-1.An own goal cannot be scored from a goal kick; in the highly unlikely circumstance that the ball enters the kicker's own goal before being touched by another player, a corner kick is awarded.
-2.If the kicker touches the ball a second time before it has been touched by another player, an indirect free kick is awarded to the opposing team from the place where the offence occurred, unless the second touch was also a more serious handling offence, which is punished by a direct free kick (or a penalty kick if within the penalty area and the kicker was not the goalkeeper) for the opposing team.
+1. An own goal cannot be scored from a goal kick; in the highly unlikely circumstance that the ball enters the kicker's own goal before being touched by another player, a corner kick is awarded.
+2. If the kicker touches the ball a second time before it has been touched by another player, an indirect free kick is awarded to the opposing team from the place where the offence occurred, unless the second touch was also a more serious handling offence, which is punished by a direct free kick (or a penalty kick if within the penalty area and the kicker was not the goalkeeper) for the opposing team.
