@@ -159,6 +159,9 @@
   <ItemGroup>
     <ClInclude Include="soccerreferee.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="referee.ini" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
