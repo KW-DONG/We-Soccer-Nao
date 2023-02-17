@@ -3,6 +3,7 @@
 #include "nao.h"
 #include <thread>
 #include <map>
+#include <regex>
 
 using namespace webots;
 
@@ -34,12 +35,19 @@ public:
 	void run();
 	void init(int number);
 	void receive_message();
-	int readHeader(std::string& src, std::string& dst, int offset);
-	int readProperty(std::string& src, std::string& dst, int offset);
 private:
 	std::thread receive;
 	int player_number;
-
+protected:
+	/**
+	* Protocal
+	* (time (now 93.60)	//system time
+	* (GS (t 0.00) (pm BeforeKickOff))	//game time and game mode
+	* (See
+	*	(B (ccs 0.0 1.0 0.05))	//ball
+	*	(P (teamRed) (id 1) (ccs 0.0 0.0 0.5))	//player
+	*	(P (teamBlue) (id 2) (ccs 2.0 1.0 0.5)))
+	*/
 };
 
 }

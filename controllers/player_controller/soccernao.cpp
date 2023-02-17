@@ -46,15 +46,48 @@ void SoccerNao::receive_message()
 	if (pReceiver->getQueueLength() > 0)
 	{
 		std::string message = (char*)pReceiver->getData();
-
-		if (message == mPlayMode[GM_BEFORE_KICK_OFF])
+		//string model = "(GS (t 0.00) (pm BeforeKickOff))";
+		std::smatch match;
+		//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
+		std::regex pattern("\\((time|GS|B|P)\\s(\\(.*\\))\\)");
+		std::regex_search(message, match, pattern);
+		std::string sHeader = match[1];
+		std::string sBody = match[2];
+		if (sHeader == "GS")
 		{
-			init()
+			
 		}
-	}
-}
+		else if(sHeader=="time")
+		{
+			double gametime;
+			std::string gamemode;
+			std::regex pattern2("(\\w+\\s[a-zA-Z.0-9\\s]+)");
+			for (std::sregex_iterator it(sBody.begin(), sBody.end(), pattern2), end_it; it != end_it; ++it)
+			{
+				//std::cout << it->str() << std::endl;
+				std::string info = it->str();
+				size_t index = (int)info.find(" ");
+				std::string time_str = info.substr(index + 1);
+				gametime = std::stod(time_str);
+			}
+		}
+		else if (sHeader == "B")
+		{
+			size_t index = sBody.find(" ");
+			while (index != std::string::npos)
+			{
 
-int SoccerNao::readHeader(std::string& src, std::string& dst, int offset)
-{
+				size_t end = sBody.find(" ", index+1);
+				if (end == std::string::npos)
+				{
+					end = sBody.length();
+				}
+				std::string position = sBody.substr(index + 1, end);
+			}
+		}
+		else if (sHeader == "P")
+		{
+
+		}
 		
 }
