@@ -63,12 +63,11 @@ public:
 protected:
 	void readPositionSensor();
 	std::vector<Emitter*> vEmitter;
+	Receiver* pReceiver;
 
 private:
 	std::vector<PositionSensor*> vPositionSensor;
 	std::vector<double> vPositionSensorValue;
-	Receiver* pReceiver;
-
 	std::vector<Motor*> vMotor;
 	Accelerometer* pAccelerometer;
 	std::vector<Camera*> vCamera;
