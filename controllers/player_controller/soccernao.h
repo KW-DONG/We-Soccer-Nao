@@ -4,6 +4,8 @@
 #include <thread>
 #include <map>
 #include <regex>
+#include <map>
+#include <vector>
 
 using namespace webots;
 
@@ -35,9 +37,13 @@ public:
 	void run();
 	void init(int number);
 	void receive_message();
+	void getpositions(std::string str, std::vector<double>& pos);
 private:
 	std::thread receive;
 	int player_number;
+	std::vector<double> position;
+	double gametime;
+	std::string gamemode;
 protected:
 	/**
 	* Protocal

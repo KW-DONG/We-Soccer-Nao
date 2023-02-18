@@ -53,15 +53,16 @@ void SoccerNao::receive_message()
 		std::regex_search(message, match, pattern);
 		std::string sHeader = match[1];
 		std::string sBody = match[2];
+		std::regex pattern2("(\\w+[a-zA-Z.0-9\\s]+)");
 		if (sHeader == "GS")
 		{
 			
 		}
 		else if(sHeader=="time")
 		{
-			double gametime;
-			std::string gamemode;
-			std::regex pattern2("(\\w+\\s[a-zA-Z.0-9\\s]+)");
+			//double gametime;
+			//std::string gamemode;
+			
 			for (std::sregex_iterator it(sBody.begin(), sBody.end(), pattern2), end_it; it != end_it; ++it)
 			{
 				//std::cout << it->str() << std::endl;
@@ -73,21 +74,46 @@ void SoccerNao::receive_message()
 		}
 		else if (sHeader == "B")
 		{
+			/*std::smatch match2;
+			if (std::regex_search(sBody, match2, pattern2))
+			{
+				std::string 
+				
+			}*/
+			std::vector<double> ball_pos;
 			size_t index = sBody.find(" ");
-			while (index != std::string::npos)
+			while (index != sBody.length()-1)
 			{
 
 				size_t end = sBody.find(" ", index+1);
 				if (end == std::string::npos)
 				{
-					end = sBody.length();
+					end = sBody.length()-1;
 				}
 				std::string position = sBody.substr(index + 1, end);
+				ball_pos.push_back(std::stod(position));
+				index = end;
 			}
 		}
 		else if (sHeader == "P")
 		{
+			std::vector<std::string> inform;
+			//std::regex pattern2("(\\w+\\s[a-zA-Z.0-9\\s]+)");
+			for (std::sregex_iterator it(sBody.begin(), sBody.end(), pattern2), end_it; it != end_it; ++it)
+			{
+				//std::cout << it->str() << std::endl;
+				std::string info = it->str();
+				inform.push_back(info);
+			}
+			std::string sTeam = inform[0];
+			int playerID = std::stoi(inform[1].substr(2));
+			std::vector<double> positon;
 
 		}
 		
+}
+
+void SoccerNao::getpositions(std::string str, std::vector<double>&pos)
+{
+	int s = 1;
 }
