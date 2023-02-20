@@ -56,7 +56,9 @@ void SoccerNao::receive_message()
 		std::regex pattern2("(\\w+[a-zA-Z.0-9\\s]+)");
 		if (sHeader == "GS")
 		{
-			
+			double system_time;
+			size_t index = sBody.find(" ");
+			system_time = std::stod(sBody.substr(index + 1));
 		}
 		else if(sHeader=="time")
 		{
@@ -108,12 +110,23 @@ void SoccerNao::receive_message()
 			std::string sTeam = inform[0];
 			int playerID = std::stoi(inform[1].substr(2));
 			std::vector<double> positon;
-
+			getPosition(inform[2], position);
 		}
 		
 }
 
-void SoccerNao::getpositions(std::string str, std::vector<double>&pos)
+void SoccerNao::getPosition(std::string str, std::vector<double>& pos)
 {
-	int s = 1;
+	size_t index = str.find(" ");
+	while (index != str.length() - 1)
+	{
+		size_t end = str.find(" ", index + 1);
+		if (end == std::string::npos)
+		{
+			end = str.length() - 1;
+		}
+		std::string position = str.substr(index + 1, end);
+		pos.push_back(std::stod(position));
+		index = end;
+	}
 }
