@@ -38,13 +38,14 @@ public:
 	void init(int number);
 	void receive_message();
 	void getPosition(std::string str, std::vector<double>& pos);
-	void send_message();
+	void send_message(std::string header, std::string content);
 private:
 	std::thread receive;
 	int player_number;
 	std::vector<double> position;
 	double gametime;
 	std::string gamemode;
+	int team;
 protected:
 	/**
 	* Protocal
