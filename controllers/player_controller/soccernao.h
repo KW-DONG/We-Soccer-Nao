@@ -37,7 +37,7 @@ public:
 	void run();
 	void init(int number);
 	void receive_message();
-	void getpositions(std::string str, std::vector<double>& pos);
+	void getPosition(std::string str, std::vector<double>& pos);
 private:
 	std::thread receive;
 	int player_number;
