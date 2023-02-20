@@ -15,6 +15,10 @@ namespace webots {
 #define TIME_STEP 32
 #define IS_LEFT_SEC(x) (x < 0)
 #define IS_RIGHT_SEC(x) (x > 0)
+#define TEAM_SIZE	4
+#define TEAM_LEFT_NAME	"left"
+#define TEAM_RIGHT_NAME	"right"
+
 
 //play mode
 enum {
@@ -44,6 +48,7 @@ public:
 	double rotation[3] = {0,0,0};
 	Node* pNode = nullptr;
 	int section;
+	bool isReady;
 };
 
 class _PlayerNode : public _Node
@@ -79,6 +84,7 @@ enum {
 //events
 enum {
 	FLG_START,
+	FLG_PLAYER_READY,
 	FLG_OUT_OF_ENDLINE_LEFT,
 	FLG_OUT_OF_ENDLINE_RIGHT,
 	FLG_OUT_OF_SIDELINE_LEFT,
@@ -97,8 +103,6 @@ enum {
 	FLG_NONE,
 	FLG_COMPLETE
 };
-
-
 
 //Pitch section
 enum {
@@ -122,7 +126,6 @@ public:
 	void findBallSection();
 
 protected:
-	void readConfig();
 	void readPosition();
 
 	/**
@@ -142,6 +145,7 @@ protected:
 protected:
 	//callbacks
 	void onStart();
+	void onPlayerReady();
 	void onOutOfEndLineLeft();
 	void onOutOfEndLineRight();
 	void onOutOfSideLineLeft();
@@ -168,20 +172,20 @@ private:
 	Emitter* pEmitter;
 	Receiver* pReceiver;
 	_Node ballNode;
-	int gameMode;
-	int lastGameMode;
-	int flag;
+	int gameMode = GM_NONE;
+	int lastGameMode = GM_NONE;
+	int flag = FLG_NONE;
 
 	//last ball keeper detail
-
 	int lastBallKeeperTeam;
+	int lastGoalTeam;
 	int lastBallKeeperRole;
 	int lastBallKeeperId;
 	double lastBallKeeperPosition[2];
 
 	//time
 	std::string gameTime;
-	double systemTime;
+	int gameDuration;
 	
 	//pitch detail
 	double pitchVec[2];
@@ -190,10 +194,12 @@ private:
 	double goalVec[2];
 	double goalZ;
 	double penaltyMarkX;
-	double penaltyMarkD;
+	double ballDiameter;
 	double centreD;
 
+	//game detial
 	int score[2] = {0,0};
+	int playerNum;
 
 };
 
