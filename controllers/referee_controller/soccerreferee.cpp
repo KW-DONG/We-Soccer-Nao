@@ -3,8 +3,10 @@
 #include <thread>
 #include <ctime>
 #include <cstdlib>
+#include <iostream>
 #include <map>
 #include "global.h"
+#include <opencv.hpp>
 
 using namespace webots;
 
@@ -44,6 +46,7 @@ void _Node::updatePosition()
 
 SoccerReferee::SoccerReferee()
 {	
+	std::cout << "start referee" << std::endl;
 	//soccer pitch
 	char value[25] = { 0 };
 	GetIniKeyString("SoccerField", "PitchLength", CONFIG_PATH, value);
@@ -53,22 +56,22 @@ SoccerReferee::SoccerReferee()
 	pitchVec[1] = atof(value) * 0.5;
 
 	GetIniKeyString("SoccerField", "PenaltyAreaLength", CONFIG_PATH, value);
-	penaltyVec[0] = pitchVec[0] * 0.5 - atof(value);
+	penaltyVec[0] = pitchVec[0] - atof(value);
 
 	GetIniKeyString("SoccerField", "PenaltyAreaWidth", CONFIG_PATH, value);
-	penaltyVec[0] = pitchVec[1] + atof(value) * 0.5;
+	penaltyVec[1] = atof(value) * 0.5;
 
 	GetIniKeyString("SoccerField", "GoalAreaLength", CONFIG_PATH, value);
-	goalAreaVec[0] = pitchVec[0] * 0.5 - atof(value);
+	goalAreaVec[0] = pitchVec[0] - atof(value);
 
 	GetIniKeyString("SoccerField", "GoalAreaWidth", CONFIG_PATH, value);
-	goalAreaVec[1] = pitchVec[1] + atof(value) * 0.5;
+	goalAreaVec[1] = atof(value) * 0.5;
 
 	GetIniKeyString("SoccerField", "GoalDepth", CONFIG_PATH, value);
-	goalVec[0] = pitchVec[0] * 0.5 + atof(value);
+	goalVec[0] = pitchVec[0] + atof(value);
 
 	GetIniKeyString("SoccerField", "GoalWidth", CONFIG_PATH, value);
-	goalVec[1] = pitchVec[1] + atof(value) * 0.5;
+	goalVec[1] = atof(value) * 0.5;
 
 	GetIniKeyString("SoccerField", "GoalHeight", CONFIG_PATH, value);
 	goalZ = atof(value);
@@ -88,7 +91,7 @@ SoccerReferee::SoccerReferee()
 
 	GetIniKeyString("Game", "DurationSec", CONFIG_PATH, value);
 	gameDuration = atoi(value);
-
+	
 	//team
 	static _PlayerNode _node;
 	_node.isReady = false;
@@ -101,7 +104,7 @@ SoccerReferee::SoccerReferee()
 		if (_node.pNode == NULL)
 		{
 			std::cerr << "No DEF " << value << " node found in the current world file" << std::endl;
-			exit(1);
+			//exit(1);
 		}
 		_node.id = i;
 		_node.team = _PlayerNode::TEAM_LEFT;
@@ -134,12 +137,16 @@ SoccerReferee::SoccerReferee()
 	pEmitter = getEmitter("emitter");
 	pReceiver = getReceiver("receiver");
 	pReceiver->enable(TIME_STEP);
+	
 }
 
 void SoccerReferee::run()
 {
+	std::cout << "call run" << std::endl;
 	while (step(TIME_STEP) != -1)
 	{
+		std::cout << "run" << std::endl;
+		
 		readReceiver();
 		readPosition();	
 		if (flag != FLG_HANDBALL_LEFT && flag != FLG_HANDBALL_RIGHT)
@@ -156,14 +163,16 @@ void SoccerReferee::run()
 		}
 
 		//send position
-		std::string msg = "(See " + seeBall(msg);
+		std::string msg = "(See (" + seeBall(msg);
 		for (int i = 0; i < playerNum; i++)
 		{
 			msg = seePlayer(msg, i);
 		}
-		msg += ")";
+		msg += "))";
 		pEmitter->setChannel(-1);
 		pEmitter->send(msg.c_str(), msg.size());
+		
+		show();
 	}
 }
 
@@ -606,5 +615,87 @@ std::string SoccerReferee::seePlayer(std::string& src, int index)
 	return msg;
 }
 
+void paintPitchArea(cv::Mat& mat, double* areaVec, double* pitchVec, double scale, int offsetX, int offsetY)
+{
+	cv::line(mat,
+		cv::Point(areaVec[0] * scale + offsetX, areaVec[1] * scale + offsetY),
+		cv::Point(areaVec[0] * scale + offsetX, -areaVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+	cv::line(mat,
+		cv::Point(-areaVec[0] * scale + offsetX, areaVec[1] * scale + offsetY),
+		cv::Point(-areaVec[0] * scale + offsetX, -areaVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+	cv::line(mat,
+		cv::Point(areaVec[0] * scale + offsetX, areaVec[1] * scale + offsetY),
+		cv::Point(pitchVec[0] * scale + offsetX, areaVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+	cv::line(mat,
+		cv::Point(areaVec[0] * scale + offsetX, -areaVec[1] * scale + offsetY),
+		cv::Point(pitchVec[0] * scale + offsetX, -areaVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+	cv::line(mat,
+		cv::Point(-areaVec[0] * scale + offsetX, areaVec[1] * scale + offsetY),
+		cv::Point(-pitchVec[0] * scale + offsetX, areaVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+	cv::line(mat,
+		cv::Point(-areaVec[0] * scale + offsetX, -areaVec[1] * scale + offsetY),
+		cv::Point(-pitchVec[0] * scale + offsetX, -areaVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+}
+
+void SoccerReferee::show()
+{
+	cv::Mat mat(480, 720, CV_8UC3, cv::Scalar(255,255,255));
+	
+	double scale = 50.0;
+	int offsetX = 360;
+	int offsetY = 240;
+
+	//pitch
+	cv::line(mat,
+		cv::Point(pitchVec[0] * scale + offsetX, pitchVec[1] * scale + offsetY),
+		cv::Point(-pitchVec[0] * scale + offsetX, pitchVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+	cv::line(mat,
+		cv::Point(-pitchVec[0] * scale + offsetX, pitchVec[1] * scale + offsetY),
+		cv::Point(-pitchVec[0] * scale + offsetX, -pitchVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+	cv::line(mat,
+		cv::Point(-pitchVec[0] * scale + offsetX, -pitchVec[1] * scale + offsetY),
+		cv::Point(pitchVec[0] * scale + offsetX, -pitchVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+	cv::line(mat,
+		cv::Point(pitchVec[0] * scale + offsetX, -pitchVec[1] * scale + offsetY),
+		cv::Point(pitchVec[0] * scale + offsetX, pitchVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+
+	//middle line
+	cv::line(mat,
+		cv::Point(offsetX, pitchVec[1] * scale + offsetY),
+		cv::Point(offsetX, -pitchVec[1] * scale + offsetY),
+		cv::Scalar(0, 0, 0));
+
+	//circle
+	cv::circle(mat, cv::Point(offsetX, offsetY), centreD * scale * 0.5, cv::Scalar(0, 0, 0));
+
+	//penalty area
+	paintPitchArea(mat, penaltyVec, pitchVec, scale, offsetX, offsetY);
+	
+	//goal area
+	paintPitchArea(mat, goalAreaVec, pitchVec, scale, offsetX, offsetY);
+
+	//goal
+	paintPitchArea(mat, goalVec, pitchVec, scale, offsetX, offsetY);
+
+	//score
+	std::string _score = "Score " + std::to_string(score[0]) + " : " + std::to_string(score[1]);
+	std::string _gameState = "Game State: " + mPlayMode[gameMode];
+	cv::putText(mat, _score, cv::Point(50, 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
+	cv::putText(mat, _gameState, cv::Point(50, 50), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
+
+
+	cv::imshow("Display", mat);
+	cv::waitKey(15);
+}
 
 

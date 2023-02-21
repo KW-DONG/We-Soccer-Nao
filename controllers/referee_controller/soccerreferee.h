@@ -162,6 +162,8 @@ protected:
 	int readHeader(std::string& src, std::string& dst, int offset=0);
 	int readProperty(std::string& src, std::string& dst, int offset);
 
+	void show();
+
 	std::string seeBall(std::string& src);
 	std::string seePlayer(std::string& src, int id);
 
