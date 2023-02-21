@@ -6,6 +6,7 @@
 #include <regex>
 #include <map>
 #include <vector>
+#include <atomic>
 
 using namespace webots;
 
@@ -40,12 +41,15 @@ public:
 	void getPosition(std::string str, std::vector<double>& pos);
 	void send_message(std::string header, std::string content);
 private:
-	std::thread receive;
+	//std::thread receive;
 	int player_number;
 	std::vector<double> position;
+	std::vector<double>* other_player;
+	std::vector<double> rotation;
 	double gametime;
 	std::string gamemode;
 	int team;
+	int role;
 protected:
 	/**
 	* Protocal

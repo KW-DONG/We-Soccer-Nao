@@ -1,5 +1,8 @@
 #include "soccernao.h"
 #include <Windows.h>
+#include "global.h"
+
+#define CONFIG_PATH		"../config.ini"
 
 using namespace webots;
 
@@ -26,26 +29,43 @@ SoccerNao::SoccerNao()
 {
 	gamemode = mPlayMode[GM_NONE];
 	player_number = vEmitter[0]->getChannel();
-	team = player_number % 5;
+	team = player_number % 4;
+	other_player = new std::vector<double>[7];
+	role = player_number == 3 ? 0 : 1;
 }
 
 void SoccerNao::run()
 {
-	
+	std::thread t1(&receive_message);
 	while (step(TIME_STEP) != -1)
 	{
-		
+		if (gamemode == mPlayMode[GM_NONE])
+		{
+			continue;
+		}
+		else if (gamemode == mPlayMode[GM_BEFORE_KICK_OFF])
+		{
+
+		}
+		else if (gamemode == mPlayMode[GM_PLAY_ON])
+		{
+			// finding the ball and 
+		}
+	}
+	if (t1.joinable())
+	{
+		t1.join();
 	}
 }
 
 void SoccerNao::init(int number)
 {
-	player_number = number;
+	//player_number = number;
 }
 
 void SoccerNao::receive_message()
 {
-	if (pReceiver->getQueueLength() > 0)
+	while(pReceiver->getQueueLength() > 0)
 	{
 		std::string message = (char*)pReceiver->getData();
 		//string model = "(GS (t 0.00) (pm BeforeKickOff))";
@@ -131,7 +151,7 @@ void SoccerNao::receive_message()
 				}
 			}
 		}
-
+		pReceiver->nextPacket();
 	}
 }
 
