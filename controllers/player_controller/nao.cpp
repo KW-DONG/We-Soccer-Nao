@@ -59,6 +59,13 @@ const std::vector<std::string> vDistanceSensorName = {
 	"Sonar/Left", "Sonar/Right"
 };
 
+const std::vector<std::string> vMotionName = {
+	"../../motions/HandWave.motion", "../../motions/Forwards.motion",
+	"../../motions/Backwards.motion", "../../motions/SideStepLeft.motion",
+	"../../motions/SideStepRight.motion", "../../motions/TurnLeft60.motion",
+	"../../motions/TurnRight60.motion"
+};
+
 Nao::Nao()
 {
 	for (int i = 0; i < vPositionSensorName.size(); i++)
@@ -116,6 +123,21 @@ Nao::Nao()
 		pDistanceSensor->enable(TIME_STEP);
 		vDistanceSensor.push_back(pDistanceSensor);
 	}
+
+	for (int i = 0; i < vMotionName.size(); i++)
+	{
+		Motion* pmotion = new Motion(vMotionName[i]);
+		pMotion.push_back(pmotion);
+	}
+
+	/*Motion hand_wave("../../motions/HandWave.motion");
+	Motion forwards("../../motions/Forwards.motion");
+	Motion backwards("../../motions/Backwards.motion");
+	Motion side_step_left("../../motions/SideStepLeft.motion");
+	Motion side_step_right("../../motions/SideStepRight.motion");
+	Motion turn_left_60("../../motions/TurnLeft60.motion");
+	Motion turn_right_60("../../motions/TurnRight60.motion");*/
+	current_motion = NULL;
 }
 
 void Nao::readPositionSensor()
@@ -123,5 +145,73 @@ void Nao::readPositionSensor()
 	for (int i = 0; i < vPositionSensor.size(); i++)
 	{
 		vPositionSensorValue[i] = vPositionSensor[i]->getValue();
+	}
+}
+
+void Nao::move(double* target)
+{
+	motion_stop();
+	int times = 5;
+	double target_2d[] = {target[0], target[1]};
+	const double* in_position = pGPS->getValues();
+	double cur_position[] = {in_position[0], in_position[1]};
+	pMotion[hand_wave]->setLoop(true);
+	while (judge_position(target_2d, cur_position) < 0.5)
+	{
+		motion_stop();
+		double* rotation = (double*)pGyro->getValues();
+		double cur_rotation = rotation[2];
+		double direction[] = {target[0] - cur_position[0], target[1] - cur_position[1]};
+		double direct_angle = acos((direction[0]) / vector_length(direction));
+		if (cur_rotation > 0)
+		{
+			if (cur_rotation - direct_angle >= PI)
+			{
+				pMotion[turn_left_60]->play();
+			}
+			else
+			{
+				pMotion[turn_right_60]->play();
+			}
+		}
+		else if (cur_rotation < 0)
+		{
+			if (cur_rotation - direct_angle >= PI)
+			{
+				pMotion[turn_right_60]->play();
+			}
+			else
+			{
+				pMotion[turn_left_60]->play();
+			}
+		}
+		while (times--)
+		{
+			pMotion[forwards]->play();
+		}
+		pMotion[hand_wave]->setLoop(false);
+		motion_stop();
+		in_position = pGPS->getValues();
+		cur_position[0] = in_position[0];
+		cur_position[1] = in_position[1];
+	}
+	motion_stop();
+}
+
+double Nao::judge_position(double* p1, double* p2)
+{
+	return sqrt(pow(p1[0] - p2[0], 2) + pow(p1[1] - p2[1], 2) + pow(p1[2] - p2[2], 2));
+}
+
+double Nao::vector_length(double v[])
+{
+	return sqrt(pow(v[0], 2) + pow(v[1], 2));
+}
+
+void Nao::motion_stop()
+{
+	for (int i = 0; i < pMotion.size(); i++)
+	{
+		pMotion[i]->stop();
 	}
 }
