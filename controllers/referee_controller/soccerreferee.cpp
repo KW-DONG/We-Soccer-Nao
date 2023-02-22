@@ -40,8 +40,8 @@ std::map<int, std::string> mTeamName = {
 
 void _Node::updatePosition()
 {
-	memcpy(&translation, pNode->getField("translation"), sizeof(translation));
-	memcpy(&rotation, pNode->getField("rotation"), sizeof(rotation));
+	memcpy(&translation, pNode->getField("translation")->getSFVec3f(), sizeof(translation));
+	memcpy(&rotation, pNode->getField("rotation")->getSFVec3f(), sizeof(rotation));
 }
 
 SoccerReferee::SoccerReferee()
@@ -104,11 +104,15 @@ SoccerReferee::SoccerReferee()
 		if (_node.pNode == NULL)
 		{
 			std::cerr << "No DEF " << value << " node found in the current world file" << std::endl;
-			//exit(1);
+			exit(1);
 		}
 		_node.id = i;
 		_node.team = _PlayerNode::TEAM_LEFT;
+		//setSFVec3f
+		double startPoint[3] = {-penaltyVec[0], penaltyVec[1] - i, 0.4};
+		_node.pNode->getField("translation")->setSFVec3f(startPoint);
 		vPlayerNodes.push_back(_node);
+
 	}
 	vPlayerNodes[vPlayerNodes.size()].role = _PlayerNode::GOAL_KEEPER;
 
@@ -124,6 +128,8 @@ SoccerReferee::SoccerReferee()
 		}
 		_node.id = i;
 		_node.team = _PlayerNode::TEAM_RIGHT;
+		double startPoint[3] = { penaltyVec[0], penaltyVec[1] - i, 0.4 };
+		_node.pNode->getField("translation")->setSFVec3f(startPoint);
 		vPlayerNodes.push_back(_node);
 	}
 	
@@ -133,11 +139,13 @@ SoccerReferee::SoccerReferee()
 
 	GetIniKeyString("Ball", "DEF", CONFIG_PATH, value);
 	ballNode.pNode = getFromDef(value);
+	std::cerr << "No DEF " << value << " node found in the current world file" << std::endl;
+	exit(1);
 
 	pEmitter = getEmitter("emitter");
 	pReceiver = getReceiver("receiver");
 	pReceiver->enable(TIME_STEP);
-	
+
 }
 
 void SoccerReferee::run()
@@ -687,11 +695,29 @@ void SoccerReferee::show()
 	//goal
 	paintPitchArea(mat, goalVec, pitchVec, scale, offsetX, offsetY);
 
-	//score
+	//text
 	std::string _score = "Score " + std::to_string(score[0]) + " : " + std::to_string(score[1]);
 	std::string _gameState = "Game State: " + mPlayMode[gameMode];
 	cv::putText(mat, _score, cv::Point(50, 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
 	cv::putText(mat, _gameState, cv::Point(50, 50), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
+
+	//ball
+	cv::circle(mat, cv::Point(ballNode.translation[0] * scale + offsetX,
+		ballNode.translation[1] * scale + offsetY), 10,
+		cv::Scalar(128, 128, ballNode.translation[2] * 10));
+
+	//player
+	for (int i = 0; i < vPlayerNodes.size(); i++)
+	{
+		cv::Scalar color;
+		if (vPlayerNodes[i].team == _PlayerNode::TEAM_LEFT)
+			color = cv::Scalar(255, 0, 0);
+		else
+			color = cv::Scalar(0, 0, 255);
+
+		cv::circle(mat, cv::Point(vPlayerNodes[i].translation[0] * scale + offsetX,
+			vPlayerNodes[i].translation[1] * scale + offsetY), 50, color);
+	}
 
 
 	cv::imshow("Display", mat);
