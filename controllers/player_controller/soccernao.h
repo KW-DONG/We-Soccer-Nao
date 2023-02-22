@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <atomic>
+#include <queue>
 
 using namespace webots;
 
@@ -38,6 +39,7 @@ public:
 	void run();
 	void init(int number);
 	void receive_message();
+	void read_message();
 	void getPosition(std::string str, std::vector<double>& pos);
 	void send_message(std::string header, std::string content);
 private:
@@ -50,6 +52,7 @@ private:
 	std::string gamemode;
 	int team;
 	int role;
+	std::queue<std::string> messages;
 protected:
 	/**
 	* Protocal
