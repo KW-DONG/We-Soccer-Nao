@@ -30,7 +30,7 @@ SoccerNao::SoccerNao()
 	gamemode = mPlayMode[GM_NONE];
 	player_number = vEmitter[0]->getChannel();
 	team = player_number % 4;
-	other_player = new std::vector<double>[7];
+	//other_player = new std::vector<double>[7];
 	role = player_number == 3 ? 0 : 1;
 }
 
@@ -51,6 +51,8 @@ void SoccerNao::run()
 		else if (gamemode == mPlayMode[GM_PLAY_ON])
 		{
 			// finding the ball and 
+			double ball[] = { ball_position[0], ball_position[1], ball_position[2] };
+			move(ball);
 		}
 	}
 	if (t1.joinable())
@@ -140,7 +142,7 @@ void SoccerNao::read_message()
 				}
 				else if (sign == 0)
 				{
-					std::vector<double> ball_position;
+					//std::vector<double> ball_position;
 					for (std::sregex_iterator it_b(info.begin(), info.end(), pattern2), end_itb; it_b != end_itb; ++it_b)
 					{
 						std::string str = info.substr(info.find(" ") + 1);
@@ -159,11 +161,12 @@ void SoccerNao::read_message()
 				}
 				else if (sign == 1)
 				{
-					std::vector<double> player_position;
+					std::vector<double>* player_position = new std::vector<double>;
 					for (std::sregex_iterator it_p(info.begin(), info.end(), pattern2), end_itp; it_p != end_itp; ++it_p)
 					{
 						std::string str = info.substr(info.find(" ") + 1);
 						int end = 0, index = 0;
+						int i = 0;
 						while (index < str.length())
 						{
 							end = str.find(" ", index);
@@ -171,10 +174,11 @@ void SoccerNao::read_message()
 							{
 								end = str.length();
 							}
-							player_position.push_back(std::stod(str.substr(index, end)));
+							player_position->push_back(std::stod(str.substr(index, end)) );
 							index = end + 1;
 						}
 					}
+					other_player.push_back(*player_position);
 				}
 			}
 		}
