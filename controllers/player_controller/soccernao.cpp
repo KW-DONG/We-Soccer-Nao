@@ -98,7 +98,7 @@ void SoccerNao::read_message()
 		std::string message = messages.front();
 		std::smatch match;
 		//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
-		std::regex pattern("\\((time|GS|See|B|P)\\s(\\(.*\\))\\)");
+		std::regex pattern("\\((time|GS|See|B|P|KB|HB)\\s(\\(.*\\))\\)");
 		std::regex_search(message, match, pattern);
 		std::string sHeader = match[1];
 		std::string sBody = match[2];
@@ -177,6 +177,12 @@ void SoccerNao::read_message()
 					}
 				}
 			}
+		}
+		else if (sHeader == "KB")
+		{
+			int player_id;
+			size_t index = sBody.find(" ");
+			player_id = std::stoi(sBody.substr(index + 1));
 		}
 	}
 	messages.pop();
