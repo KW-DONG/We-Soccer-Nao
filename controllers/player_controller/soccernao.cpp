@@ -1,6 +1,6 @@
 #include "soccernao.h"
 #include <Windows.h>
-#include "global.h"
+#include "../global/global.h"
 
 #define CONFIG_PATH		"../config.ini"
 
@@ -39,6 +39,7 @@ void SoccerNao::run()
 	std::thread t1(&receive_message);
 	while (step(TIME_STEP) != -1)
 	{
+		read_message();
 		if (gamemode == mPlayMode[GM_NONE])
 		{
 			continue;
@@ -69,6 +70,32 @@ void SoccerNao::receive_message()
 	{
 		std::string message = (char*)pReceiver->getData();
 		//string model = "(GS (t 0.00) (pm BeforeKickOff))";
+		messages.push(message);
+		pReceiver->nextPacket();
+	}
+}
+
+void SoccerNao::getPosition(std::string str, std::vector<double>& pos)
+{
+		size_t index = str.find(" ");
+		while (index != str.length() - 1)
+		{
+			size_t end = str.find(" ", index + 1);
+			if (end == std::string::npos)
+			{
+				end = str.length() - 1;
+			}
+			std::string position = str.substr(index + 1, end);
+			pos.push_back(std::stod(position));
+			index = end;
+		}
+}
+
+void SoccerNao::read_message()
+{
+	if (!messages.empty())
+	{
+		std::string message = messages.front();
 		std::smatch match;
 		//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
 		std::regex pattern("\\((time|GS|See|B|P)\\s(\\(.*\\))\\)");
@@ -116,7 +143,7 @@ void SoccerNao::receive_message()
 					std::vector<double> ball_position;
 					for (std::sregex_iterator it_b(info.begin(), info.end(), pattern2), end_itb; it_b != end_itb; ++it_b)
 					{
-						std::string str = info.substr(info.find(" ")+1);
+						std::string str = info.substr(info.find(" ") + 1);
 						int end = 0, index = 0;
 						while (index < str.length())
 						{
@@ -151,24 +178,8 @@ void SoccerNao::receive_message()
 				}
 			}
 		}
-		pReceiver->nextPacket();
 	}
-}
-
-void SoccerNao::getPosition(std::string str, std::vector<double>& pos)
-{
-		size_t index = str.find(" ");
-		while (index != str.length() - 1)
-		{
-			size_t end = str.find(" ", index + 1);
-			if (end == std::string::npos)
-			{
-				end = str.length() - 1;
-			}
-			std::string position = str.substr(index + 1, end);
-			pos.push_back(std::stod(position));
-			index = end;
-		}
+	messages.pop();
 }
 
 void SoccerNao::send_message(std::string header, std::string content)
