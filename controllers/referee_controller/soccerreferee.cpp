@@ -1,8 +1,5 @@
 #include "soccerreferee.h"
 #include <cstdlib>
-#include <thread>
-#include <ctime>
-#include <cstdlib>
 #include <iostream>
 #include <map>
 #include "global.h"
@@ -11,8 +8,6 @@
 using namespace webots;
 
 #define CONFIG_PATH		"../config.ini"
-
-const std::string ballDef = "Ball";
 
 std::map<int, std::string> mPlayMode = {
 	{GM_BEFORE_KICK_OFF, "BeforeKickOff"},
@@ -33,15 +28,10 @@ std::map<int, std::string> mPlayMode = {
 	{GM_CORNER_KICK_RIGHT, "CornerKickRight"},
 };
 
-std::map<int, std::string> mTeamName = {
-	{_PlayerNode::TEAM_LEFT, "teamLeft"},
-	{_PlayerNode::TEAM_RIGHT, "teamRight"}
-};
-
 void _Node::updatePosition()
 {
-	memcpy(&translation, pNode->getField("translation")->getSFVec3f(), sizeof(translation));
-	memcpy(&rotation, pNode->getField("rotation")->getSFVec3f(), sizeof(rotation));
+	memcpy(translation, pNode->getField("translation")->getSFVec3f(), sizeof(translation));
+	memcpy(rotation, pNode->getField("rotation")->getSFRotation(), sizeof(rotation));
 }
 
 SoccerReferee::SoccerReferee()
@@ -87,7 +77,8 @@ SoccerReferee::SoccerReferee()
 
 	//game
 	GetIniKeyString("Game", "PlayerNum", CONFIG_PATH, value);
-	playerNum = atoi(value);
+	teamPlayerNum = atoi(value);
+	totalPlayerNum = teamPlayerNum * 2;
 
 	GetIniKeyString("Game", "DurationSec", CONFIG_PATH, value);
 	gameDuration = atoi(value);
@@ -96,7 +87,7 @@ SoccerReferee::SoccerReferee()
 	static _PlayerNode _node;
 	_node.isReady = false;
 	_node.role = _PlayerNode::PLAYER;
-	for (int i = 0; i < playerNum; i++)
+	for (int i = 0; i < teamPlayerNum; i++)
 	{	
 		std::string key = "DEF" + std::to_string(i);
 		GetIniKeyString("Team1", key.c_str(), CONFIG_PATH, value);
@@ -110,13 +101,14 @@ SoccerReferee::SoccerReferee()
 		_node.team = _PlayerNode::TEAM_LEFT;
 		//setSFVec3f
 		double startPoint[3] = {-penaltyVec[0], penaltyVec[1] - i, 0.4};
+		double startRot[4] = { 0,0,1,0 };
 		_node.pNode->getField("translation")->setSFVec3f(startPoint);
+		_node.pNode->getField("rotation")->setSFRotation(startRot);
 		vPlayerNodes.push_back(_node);
-
 	}
 	vPlayerNodes[vPlayerNodes.size()].role = _PlayerNode::GOAL_KEEPER;
 
-	for (int i = 0; i < playerNum; i++)
+	for (int i = 0; i < teamPlayerNum; i++)
 	{
 		std::string key = "DEF" + std::to_string(i);
 		GetIniKeyString("Team2", key.c_str(), CONFIG_PATH, value);
@@ -126,10 +118,12 @@ SoccerReferee::SoccerReferee()
 			std::cerr << "No DEF " << value << " node found in the current world file" << std::endl;
 			exit(1);
 		}
-		_node.id = i;
+		_node.id = i + teamPlayerNum;
 		_node.team = _PlayerNode::TEAM_RIGHT;
 		double startPoint[3] = { penaltyVec[0], penaltyVec[1] - i, 0.4 };
+		double startRot[4] = { 0,0,1,3.14 };
 		_node.pNode->getField("translation")->setSFVec3f(startPoint);
+		_node.pNode->getField("rotation")->setSFRotation(startRot);
 		vPlayerNodes.push_back(_node);
 	}
 	
@@ -139,27 +133,32 @@ SoccerReferee::SoccerReferee()
 
 	GetIniKeyString("Ball", "DEF", CONFIG_PATH, value);
 	ballNode.pNode = getFromDef(value);
-	std::cerr << "No DEF " << value << " node found in the current world file" << std::endl;
-	exit(1);
+	if (ballNode.pNode == NULL)
+	{
+		std::cerr << "No DEF " << value << " node found in the current world file" << std::endl;
+		exit(1);
+	}
+	double startPoint[3] = { 0, 0, ballDiameter };
+	ballNode.pNode->getField("translation")->setSFVec3f(startPoint);
 
 	pEmitter = getEmitter("emitter");
 	pReceiver = getReceiver("receiver");
 	pReceiver->enable(TIME_STEP);
 
+	gameMode = GM_BEFORE_KICK_OFF;
 }
 
 void SoccerReferee::run()
 {
-	std::cout << "call run" << std::endl;
 	while (step(TIME_STEP) != -1)
-	{
-		std::cout << "run" << std::endl;
-		
+	{		
 		readReceiver();
 		readPosition();	
-		if (flag != FLG_HANDBALL_LEFT && flag != FLG_HANDBALL_RIGHT)
+			
+		if (flag != FLG_HANDBALL_LEFT && flag != FLG_HANDBALL_RIGHT && flag != FLG_TIME_UP)
 			localReferee();
 		lastGameMode = gameMode;
+
 		stateDriver();
 
 		//boardcast playmode
@@ -171,16 +170,20 @@ void SoccerReferee::run()
 		}
 
 		//send position
-		std::string msg = "(See (" + seeBall(msg);
-		for (int i = 0; i < playerNum; i++)
+		
+		std::string msg = "(See (";
+		msg = seeBall(msg);
+		for (int i = 0; i < teamPlayerNum; i++)
 		{
 			msg = seePlayer(msg, i);
 		}
 		msg += "))";
-		pEmitter->setChannel(-1);
+	
 		pEmitter->send(msg.c_str(), msg.size());
 		
 		show();
+		if (gameDuration < getTime())
+			flag = FLG_TIME_UP;
 	}
 }
 
@@ -253,36 +256,24 @@ void SoccerReferee::readReceiver()
 	if (pReceiver->getQueueLength() > 0)
 	{
 		std::string data = (char*)pReceiver->getData();
-		std::string sHeader, sTeam, sId;
+		std::string sHeader;
 		int offset = readHeader(data, sHeader, 0);
 
-		offset = readProperty(data, sTeam, offset);
-		readProperty(data, sId, offset);
-		lastBallKeeperId = atoi(sId.c_str());
+		lastBallKeeperId = readId(data, offset);
 
 		if (sHeader == "RD")
 		{
-			if (sTeam == TEAM_LEFT_NAME)
-				vPlayerNodes[lastBallKeeperId].isReady = true;
-			else if (sTeam == TEAM_RIGHT_NAME)
-				vPlayerNodes[lastBallKeeperId + TEAM_SIZE].isReady = true;
+			vPlayerNodes[lastBallKeeperId].isReady = true;
 		}
 		else
 		{
-			if (sTeam == TEAM_LEFT_NAME)
-			{
-				lastBallKeeperPosition[0] = vPlayerNodes[lastBallKeeperId].translation[0];
-				lastBallKeeperPosition[1] = vPlayerNodes[lastBallKeeperId].translation[1];
-				lastBallKeeperRole = vPlayerNodes[lastBallKeeperId].role;
-				lastBallKeeperTeam = _PlayerNode::TEAM_LEFT;
-			}		
-			else if (sTeam == TEAM_RIGHT_NAME)
-			{
-				lastBallKeeperPosition[0] = vPlayerNodes[lastBallKeeperId + TEAM_SIZE].translation[0];
-				lastBallKeeperPosition[1] = vPlayerNodes[lastBallKeeperId + TEAM_SIZE].translation[1];
-				lastBallKeeperRole = vPlayerNodes[lastBallKeeperId + TEAM_SIZE].role;
+			if (lastBallKeeperId < teamPlayerNum)
+				lastBallKeeperTeam = _PlayerNode::TEAM_LEFT;		
+			else				
 				lastBallKeeperTeam = _PlayerNode::TEAM_RIGHT;
-			}
+
+			memcpy(lastBallKeeperPosition, vPlayerNodes[lastBallKeeperId].translation, 2);
+			lastBallKeeperRole = vPlayerNodes[lastBallKeeperId].role;
 		
 			if (sHeader == "HB")
 			{
@@ -293,7 +284,7 @@ void SoccerReferee::readReceiver()
 					else
 						flag = FLG_HANDBALL_LEFT;
 				}
-				else if (sTeam == TEAM_RIGHT_NAME)
+				else
 				{
 					if (lastBallKeeperRole == _PlayerNode::GOAL_KEEPER)
 						flag = FLG_KICKBALL_RIGHT;
@@ -303,7 +294,7 @@ void SoccerReferee::readReceiver()
 			}
 			else if (sHeader == "KB")
 			{
-				if (sTeam == TEAM_LEFT_NAME)
+				if (lastBallKeeperRole == _PlayerNode::GOAL_KEEPER)
 					flag = FLG_KICKBALL_LEFT;
 				else
 					flag = FLG_KICKBALL_RIGHT;
@@ -486,6 +477,8 @@ void SoccerReferee::onPlayerReady()
 		gameMode = GM_KICK_OFF_RIGHT;
 	else
 		gameMode = GM_KICK_OFF_LEFT;
+	double _point[3] = { 0.0, 0.0, ballDiameter };
+	ballNode.pNode->getField("translation")->setSFVec3f(_point);
 	flag = FLG_NONE;
 }
 
@@ -509,14 +502,12 @@ void SoccerReferee::onOutOfEndLineRight()
 
 void SoccerReferee::onOutOfSideLineLeft()
 {
-	
 	gameMode = GM_THROW_IN_RIGHT;
 	flag = FLG_NONE;
 }
 
 void SoccerReferee::onOutOfSideLineRight()
 {
-
 	gameMode = GM_THROW_IN_LEFT;
 	flag = FLG_NONE;
 }
@@ -536,6 +527,8 @@ void SoccerReferee::onGoalLeft()
 	score[0]++;
 	gameMode = GM_KICK_OFF_RIGHT;
 	flag = FLG_NONE;
+	double _point[3] = { 0.0, 0.0, ballDiameter };
+	ballNode.pNode->getField("translation")->setSFVec3f(_point);
 }
 
 void SoccerReferee::onGoalRight()
@@ -543,6 +536,8 @@ void SoccerReferee::onGoalRight()
 	score[1]++;
 	gameMode = GM_KICK_OFF_LEFT;
 	flag = FLG_NONE;
+	double _point[3] = { 0.0, 0.0, ballDiameter };
+	ballNode.pNode->getField("translation")->setSFVec3f(_point);
 }
 
 void SoccerReferee::onHandballLeft()
@@ -585,23 +580,12 @@ int SoccerReferee::readHeader(std::string& src, std::string& dst, int offset)
 	return end;
 }
 
-int SoccerReferee::readProperty(std::string& src, std::string& dst, int offset)
+int SoccerReferee::readId(std::string& src, int offset)
 {
-	int start = 0;
-	int end = 0;
-
-	for (int i = offset; i < src.size(); i++)
-	{
-		if (src[i] == '<')
-			start = i;
-		else if (src[i] == '>')
-		{
-			end = i;
-			break;
-		}
-	}
-	dst = src.substr(start, end - start);
-	return end;
+	size_t start = src.find("id ", offset) + 3;
+	size_t end = src.find(" )", start);
+	
+	return atoi(src.substr(start, end - start).c_str());
 }
 
 std::string SoccerReferee::seeBall(std::string& src)
@@ -615,8 +599,8 @@ std::string SoccerReferee::seeBall(std::string& src)
 
 std::string SoccerReferee::seePlayer(std::string& src, int index)
 {
-	std::string msg = src + "(P (team " + mTeamName[vPlayerNodes[index].team] + ") (id " + 
-		std::to_string(vPlayerNodes[index].id) + " ) (ccs " + 
+	std::string msg = src + "(P (id " + 
+		std::to_string(vPlayerNodes[index].id) + ") (ccs " + 
 		std::to_string(vPlayerNodes[index].translation[0]) + " " +
 		std::to_string(vPlayerNodes[index].translation[1]) + " " +
 		std::to_string(vPlayerNodes[index].translation[2]) + "))";
@@ -698,13 +682,15 @@ void SoccerReferee::show()
 	//text
 	std::string _score = "Score " + std::to_string(score[0]) + " : " + std::to_string(score[1]);
 	std::string _gameState = "Game State: " + mPlayMode[gameMode];
+	std::string _time = "Time: " + std::to_string(getTime()) + "s";
 	cv::putText(mat, _score, cv::Point(50, 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
 	cv::putText(mat, _gameState, cv::Point(50, 50), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
+	cv::putText(mat, _time, cv::Point(200, 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
 
 	//ball
 	cv::circle(mat, cv::Point(ballNode.translation[0] * scale + offsetX,
-		ballNode.translation[1] * scale + offsetY), 10,
-		cv::Scalar(128, 128, ballNode.translation[2] * 10));
+		-ballNode.translation[1] * scale + offsetY), 5,
+		cv::Scalar(128, 128, ballNode.translation[2] * 50));
 
 	//player
 	for (int i = 0; i < vPlayerNodes.size(); i++)
@@ -716,12 +702,9 @@ void SoccerReferee::show()
 			color = cv::Scalar(0, 0, 255);
 
 		cv::circle(mat, cv::Point(vPlayerNodes[i].translation[0] * scale + offsetX,
-			vPlayerNodes[i].translation[1] * scale + offsetY), 50, color);
+			-vPlayerNodes[i].translation[1] * scale + offsetY), 7, color);
 	}
-
 
 	cv::imshow("Display", mat);
 	cv::waitKey(15);
 }
-
-
