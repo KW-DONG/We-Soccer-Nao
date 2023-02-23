@@ -15,10 +15,6 @@ namespace webots {
 #define TIME_STEP 32
 #define IS_LEFT_SEC(x) (x < 0)
 #define IS_RIGHT_SEC(x) (x > 0)
-#define TEAM_SIZE	4
-#define TEAM_LEFT_NAME	"left"
-#define TEAM_RIGHT_NAME	"right"
-
 
 //play mode
 enum {
@@ -45,7 +41,7 @@ class _Node
 public:
 	void updatePosition();
 	double translation[3] = {0,0,0};
-	double rotation[3] = {0,0,0};
+	double rotation[4] = {0,0,0,0};
 	Node* pNode = nullptr;
 	int section;
 	bool isReady;
@@ -127,16 +123,6 @@ public:
 
 protected:
 	void readPosition();
-
-	/**
-	* Protocal
-	* (time (now 93.60)	//system time
-	* (GS (t 0.00) (pm BeforeKickOff))	//game time and game mode
-	* (See
-	*	(B (ccs 0.0 1.0 0.05))	//ball
-	*	(P (teamRed) (id 1) (ccs 0.0 0.0 0.5))	//player
-	*	(P (teamBlue) (id 2) (ccs 2.0 1.0 0.5)))
-	*/
 	void readReceiver();
 	void localReferee();
 	void stateDriver();
@@ -160,7 +146,7 @@ protected:
 	void onComplete();
 
 	int readHeader(std::string& src, std::string& dst, int offset=0);
-	int readProperty(std::string& src, std::string& dst, int offset);
+	int readId(std::string& src, int offset);
 
 	void show();
 
@@ -176,7 +162,7 @@ private:
 	_Node ballNode;
 	int gameMode = GM_NONE;
 	int lastGameMode = GM_NONE;
-	int flag = FLG_NONE;
+	std::atomic<int> flag = FLG_NONE;
 
 	//last ball keeper detail
 	int lastBallKeeperTeam;
@@ -186,7 +172,7 @@ private:
 	double lastBallKeeperPosition[2];
 
 	//time
-	std::string gameTime;
+	//std::string gameTime;
 	int gameDuration;
 	
 	//pitch detail
@@ -201,7 +187,8 @@ private:
 
 	//game detial
 	int score[2] = {0,0};
-	int playerNum;
+	int teamPlayerNum;
+	int totalPlayerNum;
 
 };
 

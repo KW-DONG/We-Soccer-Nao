@@ -46,13 +46,15 @@ private:
 	//std::thread receive;
 	int player_number;
 	std::vector<double> position;
-	std::vector<double>* other_player;
+	std::vector<std::vector<double>> other_player;
 	std::vector<double> rotation;
+	std::vector<double> ball_position;
 	double gametime;
 	std::string gamemode;
 	int team;
 	int role;
 	std::queue<std::string> messages;
+
 protected:
 	/**
 	* Protocal

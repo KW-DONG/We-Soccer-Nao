@@ -50,3 +50,68 @@ The ball becomes in play as soon as it is kicked and clearly moves.
 ### Infringements
 1. An own goal cannot be scored from a goal kick; in the highly unlikely circumstance that the ball enters the kicker's own goal before being touched by another player, a corner kick is awarded.
 2. If the kicker touches the ball a second time before it has been touched by another player, an indirect free kick is awarded to the opposing team from the place where the offence occurred, unless the second touch was also a more serious handling offence, which is punished by a direct free kick (or a penalty kick if within the penalty area and the kicker was not the goalkeeper) for the opposing team.
+
+
+## Penalty kick
+A penalty kick is a method of restarting play in a football game, in which a player is allowed to take a single shot at the goal while it is defended only by the opposing team's goalkeeper.
+
+### Entry Condition：
+An offence punishable by a direct free kick is committed by a player in their own penalty area.
+
+### Exit Condition: 
+The ball is in play once it is kicked and moves.
+
+### Criteria of the penalty kick:
+1.The ball is placed on the penalty mark, regardless of where in the penalty area the foul occurred. The player taking the kick must be identified to the referee. 
+2.Only the kicker and the defending team's goalkeeper are allowed to be within the penalty area; all other players must be within the field of play, outside the penalty area, behind the penalty mark, and a minimum of 9.15m (10 yd) from the penalty mark (this distance is denoted by the penalty arc). 
+3.The goalkeeper is allowed to move before the ball is kicked, but must remain on the goal-line between the goal-posts, facing the kicker, without touching the goalposts, crossbar, or goal net. At the moment the kick is taken, the goalkeeper must have at least part of one foot touching, or in line with, the goal line. 
+
+### Re-kicking condition:
+In case of an infringement of the laws of the game during a penalty kick, most commonly entering the penalty area illegally, the referee must consider both whether the ball entered the goal, and which team committed the offence. If both teams commit an offence, a rekick is taken.
+
+### Infringements:
+1.If a teammate of the identified kicker kicks the ball instead, an indirect free kick for the defending team will be resulted in.
+2.If kicker feints kicking the ball at the end of the run-up, an indirect free kick for the defending team will be resulted in.
+3.If kick does not go forward, an indirect free kick for the defending team will be resulted in.
+4.If kicker touches the ball a second time before it touches another player (includes rebounds off the goal posts or crossbar), an indirect free kick for the defending team will be resulted in.
+
+
+
+## Corner kick
+### Entry Condition：
+The ball wholly crosses the goal line outside of the goal frame having been last touched by a member of the team defending that end of the pitch.
+
+### Exit Condition: 
+The ball becomes in play as soon as it enters the field of play.
+
+### Criteria of the Corner kick:
+1.The ball must be stationary and on the ground within the corner area formed by a quarter circle with a radius of one yard from the corner flagpost inside the field of play.
+2.All opposing players must be at least 10 yards from the corner area until the ball is in play. Marks may optionally be made on the goal line and touchline at a distance of 10 yards from the corner area to assist the referee in enforcing this provision.
+3.The ball is in play when it is kicked and clearly moves; it does not need to leave the corner area.
+4.The player taking the corner kick may not touch the ball a second time before it has touched another player.
+
+### Re-kicking condition:
+If the kick is taken with a moving ball, or from the wrong place, the corner kick is retaken.
+
+### Infringements:
+1.It is an offence for the kicker to touch the ball a second time before it has been touched by another player; this is punishable by an indirect free kick to the defending team from where the offence occurred, unless the second touch was also a more serious handling offence, in which case a direct free kick is awarded to the defending team.
+2.An own goal may not be scored directly: in the extremely unlikely event of the ball going directly into the attacking team's own goal from a corner kick, a corner kick would be awarded to the opposing side.
+
+
+## Free kick
+### Entry Condition：
+An offence committed anywhere.
+
+### Exit Condition: 
+The ball becomes in play as soon as it is kicked and clearly moves.
+
+### Criteria of the free kick:
+1.The ball must be stationary and on the ground. Opponents must be at least 9.15 m (10 yards) from the ball until it is in play, unless they are on their own goal-line between the goal-posts. If the free kick is taken from within the kicking team's penalty area, opponents must be outside the penalty area.
+2.If the defending team forms a "wall" of three or more players, all attacking players must be at least 1 m (1 yard) from the wall until the ball is in play.
+
+### Re-kicking condition:
+If the ball is moving, or in the wrong place, the kick is retaken.
+
+### Infringements:
+1.If the kicker touches the ball a second time before it has touched another player, an indirect free kick is awarded to the opposing team, unless this second touch is an illegal handball offence, in which case a direct free kick or penalty kick is awarded.
+2.If an attacking player stands within 1 m of a "wall" of 3 or more defending players, an indirect free kick is awarded to the opposing team.
