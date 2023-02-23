@@ -10,18 +10,29 @@ TexturedBackground {
 }
 Robot {
   children [
+    Receiver {
+    }
     Emitter {
     }
   ]
   name "Referee"
+  controller "referee_controller"
   supervisor TRUE
 }
 RobocupSoccerField {
+  size "kid"
 }
-RobocupSoccerBall {
+DEF Ball RobocupSoccerBall {
   translation 1 0 0
 }
-DEF Player Nao {
+DEF red_0 Nao {
+  translation -3.23 0 0.334
+  controller "void"
+}
+DEF blue_0 Nao {
+  translation 2.1 0 0.334
+  name "NAO(1)"
+  controller "void"
 }
 TexturedBackgroundLight {
   texture "stadium"
