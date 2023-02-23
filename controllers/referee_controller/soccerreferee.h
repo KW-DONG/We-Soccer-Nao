@@ -172,7 +172,7 @@ private:
 	double lastBallKeeperPosition[2];
 
 	//time
-	std::string gameTime;
+	//std::string gameTime;
 	int gameDuration;
 	
 	//pitch detail
