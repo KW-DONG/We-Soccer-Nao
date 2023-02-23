@@ -27,19 +27,32 @@ std::map<int, std::string> mPlayMode = {
 
 SoccerNao::SoccerNao()
 {
+	pemitter = getEmitter("emitter");
+	preceiver = getReceiver("receiver");
+	
+	preceiver->enable(TIME_STEP);
 	gamemode = mPlayMode[GM_NONE];
-	player_number = vEmitter[0]->getChannel();
+	player_number = pemitter->getChannel();
+	//player_number = 0;
+
 	team = player_number % 4;
 	//other_player = new std::vector<double>[7];
 	role = player_number == 3 ? 0 : 1;
+
 }
 
 void SoccerNao::run()
 {
-	std::thread t1(&receive_message);
+	//std::thread t1(&SoccerNao::receive_message, this);
+	int i = 0;
 	while (step(TIME_STEP) != -1)
 	{
+		i++;
+		
+		receive_message();
+
 		read_message();
+
 		if (gamemode == mPlayMode[GM_NONE])
 		{
 			continue;
@@ -54,11 +67,12 @@ void SoccerNao::run()
 			double ball[] = { ball_position[0], ball_position[1], ball_position[2] };
 			move(ball);
 		}
+		std::cout << i << std::endl;
 	}
-	if (t1.joinable())
+	/*if (t1.joinable())
 	{
 		t1.join();
-	}
+	}*/
 }
 
 void SoccerNao::init(int number)
@@ -68,13 +82,17 @@ void SoccerNao::init(int number)
 
 void SoccerNao::receive_message()
 {
-	while(pReceiver->getQueueLength() > 0)
+	std::cout << preceiver->getQueueLength() << std::endl;
+	while(preceiver->getQueueLength() > 0)
 	{
-		std::string message = (char*)pReceiver->getData();
+		std::cout << "hello" << std::endl;
+		std::string message = (char*)preceiver->getData();
 		//string model = "(GS (t 0.00) (pm BeforeKickOff))";
 		messages.push(message);
-		pReceiver->nextPacket();
+		std::cout << "hello" << message << std::endl;
+		preceiver->nextPacket();
 	}
+
 }
 
 void SoccerNao::getPosition(std::string str, std::vector<double>& pos)
@@ -97,6 +115,7 @@ void SoccerNao::read_message()
 {
 	if (!messages.empty())
 	{
+
 		std::string message = messages.front();
 		std::smatch match;
 		//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");

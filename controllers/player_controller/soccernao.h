@@ -54,6 +54,8 @@ private:
 	int team;
 	int role;
 	std::queue<std::string> messages;
+	Emitter* pemitter;
+	Receiver* preceiver;
 
 protected:
 	/**

@@ -60,10 +60,10 @@ const std::vector<std::string> vDistanceSensorName = {
 };
 
 const std::vector<std::string> vMotionName = {
-	"../../motions/HandWave.motion", "../../motions/Forwards.motion",
-	"../../motions/Backwards.motion", "../../motions/SideStepLeft.motion",
-	"../../motions/SideStepRight.motion", "../../motions/TurnLeft60.motion",
-	"../../motions/TurnRight60.motion"
+	"motions/HandWave.motion", "motions/Forwards.motion",
+	"motions/Backwards.motion", "motions/SideStepLeft.motion",
+	"motions/SideStepRight.motion", "motions/TurnLeft60.motion",
+	"motions/TurnRight60.motion"
 };
 
 Nao::Nao()

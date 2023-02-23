@@ -13,6 +13,7 @@ Robot {
     Receiver {
     }
     Emitter {
+      channel -1
     }
   ]
   name "Referee"
@@ -27,12 +28,13 @@ DEF Ball RobocupSoccerBall {
 }
 DEF red_0 Nao {
   translation -3.23 0 0.334
-  controller "void"
+  controller "player_controller"
 }
 DEF blue_0 Nao {
   translation 2.1 0 0.334
   name "NAO(1)"
   controller "void"
+  channel 4
 }
 TexturedBackgroundLight {
   texture "stadium"
