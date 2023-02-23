@@ -29,12 +29,17 @@ SoccerNao::SoccerNao()
 {
 	pemitter = getEmitter("emitter");
 	preceiver = getReceiver("receiver");
-	
 	preceiver->enable(TIME_STEP);
+	preceiver->setChannel(-1);
+	std::cout << preceiver->getChannel() << std::endl;
 	gamemode = mPlayMode[GM_NONE];
 	player_number = pemitter->getChannel();
 	//player_number = 0;
-
+	other_player = new double* [7];
+	for (int i = 0; i < 7; i++)
+	{
+		other_player[i] = new double[3];
+	}
 	team = player_number % 4;
 	//other_player = new std::vector<double>[7];
 	role = player_number == 3 ? 0 : 1;
@@ -45,17 +50,19 @@ void SoccerNao::run()
 {
 	//std::thread t1(&SoccerNao::receive_message, this);
 	int i = 0;
+
 	while (step(TIME_STEP) != -1)
 	{
 		i++;
-		
-		receive_message();
-
-		read_message();
-
+		//send_message("1", "2");
+		if (receive_message())
+		{
+			read_message();
+		}
+		std::cout << gamemode << std::endl;
 		if (gamemode == mPlayMode[GM_NONE])
 		{
-			continue;
+			//continue;
 		}
 		else if (gamemode == mPlayMode[GM_BEFORE_KICK_OFF])
 		{
@@ -64,10 +71,17 @@ void SoccerNao::run()
 		else if (gamemode == mPlayMode[GM_PLAY_ON])
 		{
 			// finding the ball and 
-			double ball[] = { ball_position[0], ball_position[1], ball_position[2] };
-			move(ball);
+			//std::cout << "goal!" << std::endl;
+			if (!ball_position.empty())
+			{
+				double ball[] = { ball_position[0], ball_position[1], ball_position[2] };
+				/*std::cout << ball[0] << ball[1] << ball[2] << std::endl;
+				std::cout << "cxk" << std::endl;*/
+				move(ball);
+				//std::cout << "goal!!!!" << std::endl;
+			}
 		}
-		std::cout << i << std::endl;
+		//std::cout << i << std::endl;
 	}
 	/*if (t1.joinable())
 	{
@@ -80,35 +94,41 @@ void SoccerNao::init(int number)
 	//player_number = number;
 }
 
-void SoccerNao::receive_message()
+bool SoccerNao::receive_message()
 {
+	if (preceiver->getQueueLength() == 0)
+	{
+		Sleep(50);
+		return false;
+	}
 	std::cout << preceiver->getQueueLength() << std::endl;
 	while(preceiver->getQueueLength() > 0)
 	{
-		std::cout << "hello" << std::endl;
+		//std::cout << "hello" << std::endl;
 		std::string message = (char*)preceiver->getData();
-		//string model = "(GS (t 0.00) (pm BeforeKickOff))";
+		//string model = "(GS (t 0.00) (pm BeforeKickOff))";s
 		messages.push(message);
-		std::cout << "hello" << message << std::endl;
+		//std::cout << message+" controller" << std::endl;
 		preceiver->nextPacket();
 	}
-
+	return true;
 }
 
 void SoccerNao::getPosition(std::string str, std::vector<double>& pos)
 {
-		size_t index = str.find(" ");
-		while (index != str.length() - 1)
+	int end = 0, index = 0;
+	while (index < str.length())
+	{
+		end = str.find(" ", index);
+		if (end == std::string::npos)
 		{
-			size_t end = str.find(" ", index + 1);
-			if (end == std::string::npos)
-			{
-				end = str.length() - 1;
-			}
-			std::string position = str.substr(index + 1, end);
-			pos.push_back(std::stod(position));
-			index = end;
+			end = str.length();
 		}
+		/*std::cout << std::stod(str.substr(index, end)) << std::endl;
+		std::cout << "in" << std::endl;*/
+		pos.push_back(std::stod(str.substr(index, end)));
+		index = end + 1;
+	}
 }
 
 void SoccerNao::read_message()
@@ -117,20 +137,21 @@ void SoccerNao::read_message()
 	{
 
 		std::string message = messages.front();
+		//std::cout << message + " read" << std::endl;
 		std::smatch match;
 		//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
 		std::regex pattern("\\((time|GS|See|B|P|KB|HB)\\s(\\(.*\\))\\)");
 		std::regex_search(message, match, pattern);
 		std::string sHeader = match[1];
 		std::string sBody = match[2];
-		std::regex pattern2("(\\w+[a-zA-Z.0-9\\s]+)");
-		if (sHeader == "GS")
+		std::regex pattern2("(\\w+[a-zA-Z.0-9\\s\\-]+)");
+		if (sHeader == "time")
 		{
 			double system_time;
 			size_t index = sBody.find(" ");
 			system_time = std::stod(sBody.substr(index + 1));
 		}
-		else if (sHeader == "time")
+		else if (sHeader == "GS")
 		{
 			//double gametime;
 			//std::string gamemode;
@@ -139,9 +160,18 @@ void SoccerNao::read_message()
 			{
 				//std::cout << it->str() << std::endl;
 				std::string info = it->str();
-				size_t index = (int)info.find(" ");
-				std::string time_str = info.substr(index + 1);
-				gametime = std::stod(time_str);
+				size_t index = info.find(" ");
+				std::string title = info.substr(0, index);
+				std::string tail = info.substr(index+1);
+				if(title=="time")
+				{
+					gametime = std::stod(tail);
+				}
+				else if(title=="pm")
+				{
+					gamemode = tail;
+				}
+				//gametime = std::stod(time_str);
 			}
 		}
 		else if (sHeader == "See")
@@ -151,6 +181,7 @@ void SoccerNao::read_message()
 			{
 				//cout << it->str() << endl;
 				std::string info = it->str();
+				
 				if (info == "B ")
 				{
 					sign = 0;
@@ -162,42 +193,63 @@ void SoccerNao::read_message()
 				else if (sign == 0)
 				{
 					//std::vector<double> ball_position;
-					for (std::sregex_iterator it_b(info.begin(), info.end(), pattern2), end_itb; it_b != end_itb; ++it_b)
+					/*for (std::sregex_iterator it_b(info.begin(), info.end(), pattern2), end_itb; it_b != end_itb; ++it_b)
 					{
-						std::string str = info.substr(info.find(" ") + 1);
-						int end = 0, index = 0;
-						while (index < str.length())
+						size_t first_cut = info.find(" ");
+						std::string title = info.substr(0, first_cut);
+						std::string tail = info.substr(first_cut + 1);
+						if (title == "css")
 						{
-							end = str.find(" ", index);
-							if (end == std::string::npos)
+							int end = 0, index = 0;
+							while (index < tail.length())
 							{
-								end = str.length();
+								end = tail.find(" ", index);
+								if (end == std::string::npos)
+								{
+									end = tail.length();
+								}
+								ball_position.push_back(std::stod(tail.substr(index, end)));
+								index = end + 1;
 							}
-							ball_position.push_back(std::stod(str.substr(index, end)));
-							index = end + 1;
 						}
+					}*/
+					size_t first_cut = info.find(" ");
+					std::string title = info.substr(0, first_cut);
+					std::string tail = info.substr(first_cut + 1);
+					//std::cout << "yes"+title << std::endl;
+					if (title == "ccs")
+					{
+						//std::cout << "yes" << std::endl;
+						getPosition(tail, ball_position);
 					}
+					/*for (int i = 0; i < ball_position.size(); i++)
+					{
+						std::cout << ball_position[i] << std::endl;
+					}
+					std::cout << "get ball" << std::endl;*/
 				}
 				else if (sign == 1)
 				{
-					std::vector<double>* player_position = new std::vector<double>;
-					for (std::sregex_iterator it_p(info.begin(), info.end(), pattern2), end_itp; it_p != end_itp; ++it_p)
+					int seq = -1;
+					size_t first_cut = info.find(" ");
+					std::string title = info.substr(0, first_cut);
+					std::string tail = info.substr(first_cut + 1);
+					if (title == "id")
 					{
-						std::string str = info.substr(info.find(" ") + 1);
-						int end = 0, index = 0;
-						int i = 0;
-						while (index < str.length())
+						seq = std::stoi(tail);
+					}
+					else if (title == "ccs")
+					{
+						std::vector<double> o_position;
+						if (seq >= 0)
 						{
-							end = str.find(" ", index);
-							if (end == std::string::npos)
-							{
-								end = str.length();
-							}
-							player_position->push_back(std::stod(str.substr(index, end)) );
-							index = end + 1;
+							getPosition(tail, o_position);
+							other_player[seq][0] = o_position[0];
+							other_player[seq][1] = o_position[1];
+							other_player[seq][2] = o_position[2];
 						}
 					}
-					other_player.push_back(*player_position);
+					
 				}
 			}
 		}
@@ -213,5 +265,7 @@ void SoccerNao::read_message()
 
 void SoccerNao::send_message(std::string header, std::string content)
 {
-	
+	pemitter->setChannel(-1);
+	std::string mes = "hello" + player_number;
+	pemitter->send(&mes, mes.length());
 }

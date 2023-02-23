@@ -171,7 +171,7 @@ void SoccerReferee::run()
 		{
 			std::string msg = "(GS (time " + std::to_string(getTime()) + ") (pm " + mPlayMode[gameMode] + "))";
 			pEmitter->setChannel(-1);
-			pEmitter->send(msg.c_str(), msg.size());
+			pEmitter->send(msg.c_str(), msg.size()+1);
 			std::cout << msg << std::endl;
 		}
 		
@@ -184,7 +184,7 @@ void SoccerReferee::run()
 				msg = seePlayer(msg, i);
 			}
 			msg += "))";
-			pEmitter->send(msg.c_str(), msg.size());
+			pEmitter->send(msg.c_str(), msg.size()+1);
 			std::cout << msg << std::endl;
 		}
 		
