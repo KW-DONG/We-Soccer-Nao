@@ -155,13 +155,13 @@ void Nao::move(double* target)
 	double target_2d[] = {target[0], target[1]};
 	const double* in_position = pGPS->getValues();
 	double cur_position[] = {in_position[0], in_position[1]};
-	pMotion[hand_wave]->setLoop(true);
-	pMotion[hand_wave]->play();
+	//pMotion[hand_wave]->setLoop(true);
+	//play_syn(pMotion[hand_wave]);
 	//std::cout << pMotion[hand_wave]->isValid() << std::endl;
 	
 	if (judge_position(target_2d, cur_position) > 0.5)
 	{
-		std::cout << "move" << std::endl;
+		
 		//motion_stop();
 		double* rotation = (double*)pGyro->getValues();
 		double cur_rotation = rotation[2];
@@ -172,29 +172,27 @@ void Nao::move(double* target)
 		{
 			if (cur_rotation - direct_angle >= PI)
 			{
-				pMotion[turn_left_60]->play();
+				play_syn(pMotion[turn_left_60]);
+				std::cout << "move" << std::endl;
 			}
 			else
 			{
-				pMotion[turn_right_60]->play();
+				play_syn(pMotion[turn_right_60]);
 			}
 		}
 		else if (cur_rotation < 0)
 		{
 			if (cur_rotation - direct_angle >= PI)
 			{
-				pMotion[turn_right_60]->play();
+				play_syn(pMotion[turn_right_60]);
 			}
 			else
 			{
-				pMotion[turn_left_60]->play();
+				play_syn(pMotion[turn_left_60]);
 			}
 		}
-		while (times--)
-		{
-			pMotion[forwards]->play();
-		}
-		pMotion[hand_wave]->setLoop(false);
+		play_syn(pMotion[forwards]);
+		//pMotion[hand_wave]->setLoop(false);
 		//motion_stop();
 		/*in_position = pGPS->getValues();
 		cur_position[0] = in_position[0];
@@ -219,4 +217,13 @@ void Nao::motion_stop()
 	{
 		pMotion[i]->stop();
 	}
+}
+
+void Nao::play_syn(Motion* mo)
+{
+	mo->play();
+	do
+	{
+		step(TIME_STEP);
+	} while (!mo->isOver());
 }

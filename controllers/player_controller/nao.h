@@ -72,6 +72,7 @@ public:
 	double judge_position(double* p1, double* p2);
 	double vector_length(double v[]);
 	void motion_stop();
+	void play_syn(Motion* mo);
 
 protected:
 	void readPositionSensor();
