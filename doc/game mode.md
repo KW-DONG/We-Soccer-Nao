@@ -61,7 +61,7 @@ An offence punishable by a direct free kick is committed by a player in their ow
 ### Exit Condition: 
 The ball is in play once it is kicked and moves.
 
-### Criteria of the throw-in:
+### Criteria of the penalty kick:
 1.The ball is placed on the penalty mark, regardless of where in the penalty area the foul occurred. The player taking the kick must be identified to the referee. 
 2.Only the kicker and the defending team's goalkeeper are allowed to be within the penalty area; all other players must be within the field of play, outside the penalty area, behind the penalty mark, and a minimum of 9.15m (10 yd) from the penalty mark (this distance is denoted by the penalty arc). 
 3.The goalkeeper is allowed to move before the ball is kicked, but must remain on the goal-line between the goal-posts, facing the kicker, without touching the goalposts, crossbar, or goal net. At the moment the kick is taken, the goalkeeper must have at least part of one foot touching, or in line with, the goal line. 
@@ -84,7 +84,7 @@ The ball wholly crosses the goal line outside of the goal frame having been last
 ### Exit Condition: 
 The ball becomes in play as soon as it enters the field of play.
 
-### Criteria of the throw-in:
+### Criteria of the Corner kick:
 1.The ball must be stationary and on the ground within the corner area formed by a quarter circle with a radius of one yard from the corner flagpost inside the field of play.
 2.All opposing players must be at least 10 yards from the corner area until the ball is in play. Marks may optionally be made on the goal line and touchline at a distance of 10 yards from the corner area to assist the referee in enforcing this provision.
 3.The ball is in play when it is kicked and clearly moves; it does not need to leave the corner area.
@@ -105,7 +105,7 @@ An offence committed anywhere.
 ### Exit Condition: 
 The ball becomes in play as soon as it is kicked and clearly moves.
 
-### Criteria of the throw-in:
+### Criteria of the free kick:
 1.The ball must be stationary and on the ground. Opponents must be at least 9.15 m (10 yards) from the ball until it is in play, unless they are on their own goal-line between the goal-posts. If the free kick is taken from within the kicking team's penalty area, opponents must be outside the penalty area.
 2.If the defending team forms a "wall" of three or more players, all attacking players must be at least 1 m (1 yard) from the wall until the ball is in play.
 
