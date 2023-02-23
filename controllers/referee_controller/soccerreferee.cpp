@@ -8,6 +8,7 @@
 using namespace webots;
 
 #define CONFIG_PATH		"../config.ini"
+#define ALWAYS_PLAY_ON	1
 
 std::map<int, std::string> mPlayMode = {
 	{GM_BEFORE_KICK_OFF, "BeforeKickOff"},
@@ -145,7 +146,9 @@ SoccerReferee::SoccerReferee()
 	pReceiver = getReceiver("receiver");
 	pReceiver->enable(TIME_STEP);
 
-	gameMode = GM_BEFORE_KICK_OFF;
+#if (ALWAYS_PLAY_ON)
+	gameMode = GM_PLAY_ON;
+#endif
 }
 
 void SoccerReferee::run()
@@ -154,7 +157,8 @@ void SoccerReferee::run()
 	{		
 		readReceiver();
 		readPosition();	
-			
+
+#if (!ALWAYS_PLAY_ON)
 		if (flag != FLG_HANDBALL_LEFT && flag != FLG_HANDBALL_RIGHT && flag != FLG_TIME_UP)
 			localReferee();
 		lastGameMode = gameMode;
@@ -163,23 +167,26 @@ void SoccerReferee::run()
 
 		//boardcast playmode
 		if (lastGameMode != gameMode)
+#endif
 		{
-			std::string msg = "(GS (time " + gameTime + ") (pm " + mPlayMode[gameMode] + "))";
+			std::string msg = "(GS (time " + std::to_string(getTime()) + ") (pm " + mPlayMode[gameMode] + "))";
 			pEmitter->setChannel(-1);
 			pEmitter->send(msg.c_str(), msg.size());
+			std::cout << msg << std::endl;
 		}
-
-		//send position
 		
-		std::string msg = "(See (";
-		msg = seeBall(msg);
-		for (int i = 0; i < teamPlayerNum; i++)
+		//send position
 		{
-			msg = seePlayer(msg, i);
+			std::string msg = "(See (";
+			msg = seeBall(msg);
+			for (int i = 0; i < totalPlayerNum; i++)
+			{
+				msg = seePlayer(msg, i);
+			}
+			msg += "))";
+			pEmitter->send(msg.c_str(), msg.size());
+			std::cout << msg << std::endl;
 		}
-		msg += "))";
-	
-		pEmitter->send(msg.c_str(), msg.size());
 		
 		show();
 		if (gameDuration < getTime())
