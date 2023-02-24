@@ -60,10 +60,11 @@ const std::vector<std::string> vDistanceSensorName = {
 };
 
 const std::vector<std::string> vMotionName = {
-	"motions/HandWave.motion", "motions/Forwards.motion",
-	"motions/Backwards.motion", "motions/SideStepLeft.motion",
-	"motions/SideStepRight.motion", "motions/TurnLeft60.motion",
-	"motions/TurnRight60.motion"
+	"motion/HandWave.motion", "motion/Forwards50.motion",
+	"motion/TurnLeft60.motion", "motion/TurnRight60.motion",
+	"motion/TurnLeft40.motion", "motion/TurnRight40.motion",
+	"motion/TurnLeft180.motion", "motion/TurnLeft40.motion",
+	"motion/Shoot.motion", "motion/StandUpFromFront.motion"
 };
 
 Nao::Nao()
@@ -177,12 +178,12 @@ void Nao::move(double* target)
 		{
 			if (direct_angle >= cur_rotation - PI && direct_angle <= cur_rotation)
 			{
-				play_syn(pMotion[turn_right_60]);
+				play_syn(pMotion[turn_right_40]);
 				std::cout << "move1" << std::endl;
 			}
 			else
 			{
-				play_syn(pMotion[turn_left_60]);
+				play_syn(pMotion[turn_left_40]);
 				std::cout << "move2" << std::endl;
 			}
 		}
@@ -190,12 +191,12 @@ void Nao::move(double* target)
 		{
 			if (direct_angle <= PI + cur_rotation && direct_angle >= cur_rotation)
 			{
-				play_syn(pMotion[turn_left_60]);
+				play_syn(pMotion[turn_left_40]);
 				std::cout << "move3" << std::endl;
 			}
 			else
 			{
-				play_syn(pMotion[turn_right_60]);
+				play_syn(pMotion[turn_right_40]);
 				std::cout << "move4" << std::endl;
 			}
 		}
@@ -207,6 +208,7 @@ void Nao::move(double* target)
 		cur_position[1] = in_position[1];*/
 	}
 	motion_stop();
+	return;
 }
 
 double Nao::judge_position(double* p1, double* p2)

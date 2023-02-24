@@ -62,8 +62,8 @@ enum {
 };
 
 enum {
-	hand_wave, forwards, backwards, side_step_left, side_step_right,
-	turn_left_60, turn_right_60
+	hand_wave, forwards, turn_left_60, turn_right_60, turn_left_40, turn_right_40,
+	turn_left_180, shoot, standup_fromfront
 };
 
 public:
