@@ -34,8 +34,8 @@ DEF red_0 Nao {
 DEF blue_0 Nao {
   translation 2.1 0 0.334
   name "NAO(1)"
-  controller "void"
-  channel 4
+  controller "player_controller"
+  channel -1
 }
 TexturedBackgroundLight {
   texture "stadium"
