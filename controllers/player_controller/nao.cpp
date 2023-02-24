@@ -163,32 +163,39 @@ void Nao::move(double* target)
 	{
 		
 		//motion_stop();
-		double* rotation = (double*)pGyro->getValues();
+		double* rotation = (double*)pInertialUnit->getRollPitchYaw();
 		double cur_rotation = rotation[2];
+		//std::cout << sizeof(rotation) << std::endl;
+		//double cur_rotation = pGyro->getValues()[2];
 		double direction[] = {target[0] - cur_position[0], target[1] - cur_position[1]};
 		double direct_angle = acos((direction[0]) / vector_length(direction));
-		
+		std::cout << direct_angle << std::endl;
+		//std::cout <<  << std::endl;
+		//std::cout << PI << std::endl;
 		if (cur_rotation > 0)
 		{
-			if (cur_rotation - direct_angle >= PI)
+			if (direct_angle >= cur_rotation - PI && direct_angle <= cur_rotation)
 			{
-				play_syn(pMotion[turn_left_60]);
-				std::cout << "move" << std::endl;
+				play_syn(pMotion[turn_right_60]);
+				std::cout << "move1" << std::endl;
 			}
 			else
 			{
-				play_syn(pMotion[turn_right_60]);
+				play_syn(pMotion[turn_left_60]);
+				std::cout << "move2" << std::endl;
 			}
 		}
-		else if (cur_rotation < 0)
+		else
 		{
-			if (cur_rotation - direct_angle >= PI)
+			if (direct_angle <= PI + cur_rotation && direct_angle >= cur_rotation)
 			{
-				play_syn(pMotion[turn_right_60]);
+				play_syn(pMotion[turn_left_60]);
+				std::cout << "move3" << std::endl;
 			}
 			else
 			{
-				play_syn(pMotion[turn_left_60]);
+				play_syn(pMotion[turn_right_60]);
+				std::cout << "move4" << std::endl;
 			}
 		}
 		play_syn(pMotion[forwards]);
