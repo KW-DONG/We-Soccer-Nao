@@ -101,7 +101,7 @@ SoccerReferee::SoccerReferee()
 		_node.id = i;
 		_node.team = _PlayerNode::TEAM_LEFT;
 		//setSFVec3f
-		double startPoint[3] = {-penaltyVec[0], penaltyVec[1] - i, 0.4};
+		double startPoint[3] = {-penaltyVec[0], penaltyVec[1] - i, 0.33};
 		double startRot[4] = { 0,0,1,0 };
 		_node.pNode->getField("translation")->setSFVec3f(startPoint);
 		_node.pNode->getField("rotation")->setSFRotation(startRot);
@@ -121,7 +121,7 @@ SoccerReferee::SoccerReferee()
 		}
 		_node.id = i + teamPlayerNum;
 		_node.team = _PlayerNode::TEAM_RIGHT;
-		double startPoint[3] = { penaltyVec[0], penaltyVec[1] - i, 0.4 };
+		double startPoint[3] = { penaltyVec[0], penaltyVec[1] - i, 0.35 };
 		double startRot[4] = { 0,0,1,3.14 };
 		_node.pNode->getField("translation")->setSFVec3f(startPoint);
 		_node.pNode->getField("rotation")->setSFRotation(startRot);
