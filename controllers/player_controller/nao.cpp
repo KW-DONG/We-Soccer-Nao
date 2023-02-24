@@ -169,6 +169,7 @@ void Nao::move(double* target)
 		//double cur_rotation = pGyro->getValues()[2];
 		double direction[] = {target[0] - cur_position[0], target[1] - cur_position[1]};
 		double direct_angle = acos((direction[0]) / vector_length(direction));
+		direct_angle = direction[1] > 0 ? std::abs(direct_angle) : -std::abs(direct_angle);
 		std::cout << direct_angle << std::endl;
 		//std::cout <<  << std::endl;
 		//std::cout << PI << std::endl;
