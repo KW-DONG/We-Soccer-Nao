@@ -38,7 +38,7 @@ public:
 	SoccerNao();
 	void run();
 	void init(int number);
-	void receive_message();
+	bool receive_message();
 	void read_message();
 	void getPosition(std::string str, std::vector<double>& pos);
 	void send_message(std::string header, std::string content);
@@ -46,7 +46,8 @@ private:
 	//std::thread receive;
 	int player_number;
 	std::vector<double> position;
-	std::vector<std::vector<double>> other_player;
+	//std::vector<std::vector<double>> other_player;
+	double** other_player;
 	std::vector<double> rotation;
 	std::vector<double> ball_position;
 	double gametime;
