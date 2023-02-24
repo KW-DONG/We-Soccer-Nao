@@ -6,8 +6,9 @@ using namespace webots;
 int main(int argc, char **argv) 
 {
 	SoccerNao* robot = new SoccerNao;
-	//std::thread t1(&SoccerNao::receive_message, robot);
+	//std::thread t1(&SoccerNao::get_message, robot);
+	//t1.detach();
 	robot->run();
-	//t1.join();
+	
 	delete robot;
 }

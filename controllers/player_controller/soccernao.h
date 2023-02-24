@@ -42,6 +42,7 @@ public:
 	void read_message();
 	void getPosition(std::string str, std::vector<double>& pos);
 	void send_message(std::string header, std::string content);
+	bool check_message(std::string message);
 private:
 	//std::thread receive;
 	int player_number;

@@ -48,7 +48,7 @@ SoccerNao::SoccerNao()
 
 void SoccerNao::run()
 {
-	//std::thread t1(&SoccerNao::receive_message, this);
+	//std::thread t1(&SoccerNao::get_message, this);
 	int i = 0;
 
 	while (step(TIME_STEP) != -1)
@@ -102,14 +102,25 @@ bool SoccerNao::receive_message()
 		return false;
 	}
 	std::cout << preceiver->getQueueLength() << std::endl;
+	std::string message;
+	bool sign = true;
 	while(preceiver->getQueueLength() > 0)
 	{
 		//std::cout << "hello" << std::endl;
-		std::string message = (char*)preceiver->getData();
+		sign = true;
+		message = (char*)preceiver->getData();
 		//string model = "(GS (t 0.00) (pm BeforeKickOff))";s
-		messages.push(message);
+		if (check_message(message))
+		{
+			messages.push(message);
+			sign = false;
+		}
 		//std::cout << message+" controller" << std::endl;
 		preceiver->nextPacket();
+	}
+	if(sign)
+	{
+		messages.push(message);
 	}
 	return true;
 }
@@ -166,6 +177,8 @@ void SoccerNao::read_message()
 				if(title=="time")
 				{
 					gametime = std::stod(tail);
+					std::cout << gametime << std::endl;
+					std::cout << "time" << std::endl;
 				}
 				else if(title=="pm")
 				{
@@ -259,8 +272,9 @@ void SoccerNao::read_message()
 			size_t index = sBody.find(" ");
 			player_id = std::stoi(sBody.substr(index + 1));
 		}
+		messages.pop();
 	}
-	messages.pop();
+	return;
 }
 
 void SoccerNao::send_message(std::string header, std::string content)
@@ -268,4 +282,12 @@ void SoccerNao::send_message(std::string header, std::string content)
 	pemitter->setChannel(-1);
 	std::string mes = "hello" + player_number;
 	pemitter->send(&mes, mes.length());
+}
+
+bool SoccerNao::check_message(std::string message)
+{
+	std::smatch match;
+	//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
+	std::regex pattern1("gm");
+	return std::regex_match(message, match, pattern1);
 }
