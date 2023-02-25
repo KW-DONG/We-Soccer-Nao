@@ -66,13 +66,20 @@ enum {
 	turn_left_180, shoot, standup_fromfront
 };
 
+enum {
+	stand
+};
+
 public:
 	Nao();
 	void move(double* target);
 	double judge_position(double* p1, double* p2);
 	double vector_length(double v[]);
 	void motion_stop();
-	void play_syn(Motion* mo);
+	bool play_syn(Motion* mo);
+	bool need_stand();
+	void do_the_correct(int number);
+	void play_seq(Motion* mo);
 
 protected:
 	void readPositionSensor();
@@ -89,6 +96,8 @@ protected:
 	std::vector<TouchSensor*> vTouchSensor;
 	std::vector<DistanceSensor*> vDistanceSensor;
 	std::vector<Motion*> pMotion;
+	int error_id;
+	bool error_state;
 	//Motion hand_wave;
 	//Motion forwards;
 	//Motion backwards;

@@ -1,4 +1,5 @@
 #include "nao.h"
+#include <Windows.h>
 
 const std::vector<std::string> vPositionSensorName = {
 	"HeadPitchS", "HeadYawS",
@@ -64,7 +65,7 @@ const std::vector<std::string> vMotionName = {
 	"motion/TurnLeft60.motion", "motion/TurnRight60.motion",
 	"motion/TurnLeft40.motion", "motion/TurnRight40.motion",
 	"motion/TurnLeft180.motion", "motion/TurnLeft40.motion",
-	"motion/Shoot.motion", "motion/StandUpFromFront.motion"
+	"motion/Shoot.motion", "motions/StandUpFromFront.motion"
 };
 
 Nao::Nao()
@@ -139,6 +140,8 @@ Nao::Nao()
 	Motion turn_left_60("../../motions/TurnLeft60.motion");
 	Motion turn_right_60("../../motions/TurnRight60.motion");*/
 	current_motion = NULL;
+	error_state = false;
+	error_id = -1;
 }
 
 void Nao::readPositionSensor()
@@ -151,7 +154,17 @@ void Nao::readPositionSensor()
 
 void Nao::move(double* target)
 {
-	motion_stop();
+	//motion_stop();
+	if (error_state)
+	{
+		std::cout << "not move" << std::endl;
+		return;
+	}
+	if (current_motion != NULL)
+	{
+		current_motion->stop();
+	}
+	//stand();
 	int times = 5;
 	double target_2d[] = {target[0], target[1]};
 	const double* in_position = pGPS->getValues();
@@ -179,11 +192,13 @@ void Nao::move(double* target)
 			if (direct_angle >= cur_rotation - PI && direct_angle <= cur_rotation)
 			{
 				play_syn(pMotion[turn_right_40]);
+				current_motion = pMotion[turn_right_40];
 				std::cout << "move1" << std::endl;
 			}
 			else
 			{
 				play_syn(pMotion[turn_left_40]);
+				current_motion = pMotion[turn_left_40];
 				std::cout << "move2" << std::endl;
 			}
 		}
@@ -192,22 +207,25 @@ void Nao::move(double* target)
 			if (direct_angle <= PI + cur_rotation && direct_angle >= cur_rotation)
 			{
 				play_syn(pMotion[turn_left_40]);
+				current_motion = pMotion[turn_left_40];
 				std::cout << "move3" << std::endl;
 			}
 			else
 			{
 				play_syn(pMotion[turn_right_40]);
+				current_motion = pMotion[turn_right_40];
 				std::cout << "move4" << std::endl;
 			}
 		}
 		play_syn(pMotion[forwards]);
+		current_motion = pMotion[forwards];
 		//pMotion[hand_wave]->setLoop(false);
 		//motion_stop();
 		/*in_position = pGPS->getValues();
 		cur_position[0] = in_position[0];
 		cur_position[1] = in_position[1];*/
 	}
-	motion_stop();
+	//motion_stop();
 	return;
 }
 
@@ -223,17 +241,100 @@ double Nao::vector_length(double v[])
 
 void Nao::motion_stop()
 {
+	current_motion->stop();
 	for (int i = 0; i < pMotion.size(); i++)
 	{
 		pMotion[i]->stop();
 	}
+	current_motion = NULL;
 }
 
-void Nao::play_syn(Motion* mo)
+bool Nao::play_syn(Motion* mo)
 {
+	if (error_state)
+	{
+		return false;
+	}
 	mo->play();
 	do
 	{
-		step(TIME_STEP);
+		
+		if (need_stand())
+		{
+			std::cout << "play false" << std::endl;
+			//break;
+			//mo->stop();
+			return false;
+		}
+		else
+		{
+			step(64);
+		}
 	} while (!mo->isOver());
+	std::cout << "play true" << std::endl;
+	return true;
+}
+
+bool Nao::need_stand()
+{
+	//motion_stop();
+	const double* acc = pAccelerometer->getValues();
+	std::cout << acc[0] << acc[1] << acc[2] << std::endl;
+	/*if (current_motion == NULL || current_motion->isOver() && std::fabs(acc[0]) > std::fabs(acc[1]) &&
+		std::fabs(acc[0]) > std::fabs(acc[2]) && acc[0] < -5)*/
+	if (std::fabs(acc[0]) > std::fabs(acc[1]) && std::fabs(acc[0]) > std::fabs(acc[2]) && acc[0] < -5)
+	{
+		//motion_stop();
+		//play_syn(pMotion[standup_fromfront]);
+		//current_motion = pMotion[standup_fromfront];
+		error_state = true;
+		error_id = stand;
+		std::cout << "need true" << std::endl;
+		return true;
+	}
+	std::cout << "need false" << std::endl;
+	return false;
+}
+
+void Nao::do_the_correct(int number)
+{
+	std::cout << "correct" << std::endl;
+	/*if (current_motion != NULL)
+	{
+		current_motion->stop();
+	}*/
+	std::cout << "correct2" << std::endl;
+	while (error_id == stand)
+	{
+		//Sleep(8000);
+		std::cout << "correct3" << std::endl;
+		motion_stop();
+		pMotion[standup_fromfront]->play();
+		do
+		{
+			step(64);
+			std::cout << "really did" << std::endl;
+		} while (!pMotion[standup_fromfront]->isOver());
+		std::cout << "correct4" << std::endl;
+		if (!need_stand())
+		{
+			error_id = -1;
+			std::cout << "correct5" << std::endl;
+		}
+	}
+}
+
+void Nao::play_seq(Motion* mo)
+{
+	
+	if (error_state)
+	{
+		std::cout << "seq" << std::endl;
+		do_the_correct(stand);
+	}
+	std::cout << "error_state" << error_state << std::endl;
+	if (!error_state)
+	{
+		play_syn(mo);
+	}
 }

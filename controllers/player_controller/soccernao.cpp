@@ -43,7 +43,7 @@ SoccerNao::SoccerNao()
 	team = player_number % 4;
 	//other_player = new std::vector<double>[7];
 	role = player_number == 3 ? 0 : 1;
-
+	player_state = Normal;
 }
 
 void SoccerNao::run()
@@ -53,7 +53,7 @@ void SoccerNao::run()
 
 	while (step(TIME_STEP) != -1)
 	{
-		i++;
+		std::cout << i++ << "sequence" << std::endl;
 		//send_message("1", "2");
 		if (receive_message())
 		{
@@ -77,7 +77,32 @@ void SoccerNao::run()
 				double ball[] = { ball_position[0], ball_position[1], ball_position[2] };
 				/*std::cout << ball[0] << ball[1] << ball[2] << std::endl;
 				std::cout << "cxk" << std::endl;*/
-				move(ball);
+				/*if (!stand())
+				{
+					std::cout << "able to move" << std::endl;
+					move(ball);
+					std::cout << "yeah" << std::endl;
+				}*/
+				/*if (stand())
+				{
+					std::cout << "yeah" << std::endl;
+				}*/
+				std::cout << "error_state" << error_state << std::endl;
+				std::cout << "error_id" << error_id << std::endl;
+				if (!error_state)
+				{
+					std::cout << "ready to move"  << std::endl;
+					move(ball);
+					std::cout << "no" << std::endl;
+				}
+				if (error_id == 0)
+				{
+					//motion_stop();
+					do_the_correct(0);
+					error_state = false;
+					error_id = -1;
+					std::cout << "yes" << std::endl;
+				}
 				//std::cout << "goal!!!!" << std::endl;
 			}
 		}
@@ -114,8 +139,9 @@ bool SoccerNao::receive_message()
 		{
 			messages.push(message);
 			sign = false;
+			//std::cout << "hello" << std::endl;
 		}
-		//std::cout << message+" controller" << std::endl;
+		
 		preceiver->nextPacket();
 	}
 	if(sign)
@@ -144,11 +170,12 @@ void SoccerNao::getPosition(std::string str, std::vector<double>& pos)
 
 void SoccerNao::read_message()
 {
+	//std::cout << messages.size() << "read" << std::endl;
 	if (!messages.empty())
 	{
 
 		std::string message = messages.front();
-		//std::cout << message + " read" << std::endl;
+		std::cout << message + " read" << std::endl;
 		std::smatch match;
 		//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
 		std::regex pattern("\\((time|GS|See|B|P|KB|HB)\\s(\\(.*\\))\\)");
@@ -177,8 +204,8 @@ void SoccerNao::read_message()
 				if(title=="time")
 				{
 					gametime = std::stod(tail);
-					std::cout << gametime << std::endl;
-					std::cout << "time" << std::endl;
+					//std::cout << gametime << std::endl;
+					//std::cout << "time" << std::endl;
 				}
 				else if(title=="pm")
 				{
@@ -274,7 +301,7 @@ void SoccerNao::read_message()
 		}
 		messages.pop();
 	}
-	return;
+	//return;
 }
 
 void SoccerNao::send_message(std::string header, std::string content)
@@ -288,6 +315,34 @@ bool SoccerNao::check_message(std::string message)
 {
 	std::smatch match;
 	//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
-	std::regex pattern1("gm");
-	return std::regex_match(message, match, pattern1);
+	std::regex pattern1("pm");
+	std::cout << message << "check" << std::endl;
+	return std::regex_search(message, match, pattern1);
+}
+
+void SoccerNao::thread_test()
+{
+	int n = 100;
+	while (n--)
+	{
+		std::cout << "thread test" << n << std::endl;
+	}
+}
+
+void SoccerNao::ready_to_play(int state)
+{
+	/*switch (player_state)
+	{
+	case Normal:
+		double* ball = nullptr;
+		if (!ball_position.empty())
+		{
+			double ball[] = { ball_position[0], ball_position[1], ball_position[2] };
+		}
+		struct Action* mov = new Action{ ball, NULL, Move };
+		actions.push(mov);
+
+	case Error:
+
+	}*/
 }
