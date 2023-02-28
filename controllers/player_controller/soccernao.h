@@ -32,6 +32,28 @@ namespace webots {
 		GM_CORNER_KICK_RIGHT
 	};
 
+	enum 
+	{
+		Move,
+		Pass_Ball,
+		Stand,
+		Kick_Ball
+	};
+
+	enum
+	{
+		Normal,
+		Ready_to_Pass,
+		Ready_to_Kick,
+		Error
+	};
+
+	struct Action {
+		double* _ball_position;
+		double** _other_player;
+		int action_type;
+	};
+
 class SoccerNao : public Nao
 {
 public:
@@ -42,6 +64,9 @@ public:
 	void read_message();
 	void getPosition(std::string str, std::vector<double>& pos);
 	void send_message(std::string header, std::string content);
+	bool check_message(std::string message);
+	void thread_test();
+	void ready_to_play(int state);
 private:
 	//std::thread receive;
 	int player_number;
@@ -55,6 +80,8 @@ private:
 	int team;
 	int role;
 	std::queue<std::string> messages;
+	std::queue<Action*> actions;
+	int player_state;
 	Emitter* pemitter;
 	Receiver* preceiver;
 
