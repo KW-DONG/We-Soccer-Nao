@@ -41,18 +41,22 @@ Everyone’s responsibility
 ## 3 Modelling
 ### 3.1 Mathematical Model
 ### 3.2 Simulation Development
+###
 
 ## 4 Control & Guidance
 ### 4.1 Control System Design
 ### 4.2 Navigation Sensor Representation
 ### 4.3 Guidance Algorithm
+###
 
 ## 5 Algorithm Development
 ### 5.1 Behavioural Algorithm Development
+###
 
 ## 6 Environment Development
 ### 6.1 Environmental Conditions
 ### 6.2 Visualisation
+###
 
 ## 7 Summary
 ### 7.1 Final Product
