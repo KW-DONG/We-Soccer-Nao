@@ -72,7 +72,7 @@ enum {
 
 public:
 	Nao();
-	void move(double* target);
+	bool move(double* target);
 	double judge_position(double* p1, double* p2);
 	double vector_length(double v[]);
 	void motion_stop();
@@ -80,6 +80,8 @@ public:
 	bool need_stand();
 	void do_the_correct(int number);
 	void play_seq(Motion* mo);
+	double change_angle(double ang);
+	double ang_minus(double ang1, double ang2);
 
 protected:
 	void readPositionSensor();
