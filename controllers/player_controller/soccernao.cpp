@@ -75,7 +75,8 @@ void SoccerNao::run()
 			//std::cout << "goal!" << std::endl;
 			if (!ball_position.empty())
 			{
-				double ball[] = { ball_position[0], ball_position[1], ball_position[2] };
+				double ball[] = { ball_position[0], ball_position[1]};
+				double goal[] = { -4.0, 0.0 };
 				/*std::cout << ball[0] << ball[1] << ball[2] << std::endl;
 				std::cout << "cxk" << std::endl;*/
 				/*if (!stand())
