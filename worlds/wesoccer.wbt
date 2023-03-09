@@ -27,40 +27,44 @@ DEF Ball RobocupSoccerBall {
   translation 1 0 0
 }
 DEF red_0 Nao {
-  hidden rotation_22 0 1 0 0.9600000013291096
-  hidden rotation_23 0 0.9999999999999999 0 0.9599999971956124
-  hidden rotation_24 0 0.9999999999999999 0 0.9599999987394415
-  hidden rotation_25 0 1 0 0.9600000013295683
-  hidden rotation_26 0 1 0 0.959999997195962
-  hidden rotation_27 0 1 0 0.9599999987395657
-  hidden rotation_29 0 -1 0 0.959999999238836
-  hidden rotation_34 0 0.9999999999999999 0 0.9600000013335868
-  hidden rotation_35 0 1 0 0.9599999971939962
-  hidden rotation_36 0 1 0 0.9599999987381101
-  hidden rotation_37 0 1 0 0.9600000013337516
-  hidden rotation_38 0 1 0 0.9599999971943612
-  hidden rotation_39 0 1 0 0.9599999987378754
-  hidden rotation_41 0 -1 0 0.9599999992373666
   translation -3.23 0 0.334
-  controller "player_controller"
+  controller "void"
   channel -1
 }
+DEF red_1 Nao {
+  translation -2.35 0 0.334
+  name "NAO(2)"
+  controller "void"
+}
+DEF red_2 Nao {
+  translation -0.86 0 0.334
+  name "NAO(3)"
+  controller "void"
+}
+DEF red_3 Nao {
+  translation -1.69 0 0.334
+  name "NAO(4)"
+  controller "void"
+}
 DEF blue_0 Nao {
-  hidden rotation_22 0 1 0 0.959999999769047
-  hidden rotation_23 0 1 0 0.9600000001114511
-  hidden rotation_24 0 1 0 0.9600000000291952
-  hidden rotation_25 0 1 0 0.9599999997651031
-  hidden rotation_26 0 1 0 0.9599999998861277
-  hidden rotation_27 0 1 0 0.9599999999716962
-  hidden rotation_29 0 -1 0 0.9599999999717754
-  hidden rotation_34 0 1 0 0.959999999838876
-  hidden rotation_35 0 0.9999999999999999 0 0.9599999999298928
-  hidden rotation_37 0 1 0 0.9599999998400924
-  hidden rotation_38 0 1 0 0.9599999999203995
   translation 2.1 0 0.334
   name "NAO(1)"
   controller "void"
   channel -1
+}
+DEF blue_1 Nao {
+  name "NAO(5)"
+  controller "void"
+}
+DEF blue_2 Nao {
+  translation 0.48 0 0.334
+  name "NAO(6)"
+  controller "void"
+}
+DEF blue_3 Nao {
+  translation 1.57 0 0.334
+  name "NAO(7)"
+  controller "void"
 }
 TexturedBackgroundLight {
   texture "stadium"
