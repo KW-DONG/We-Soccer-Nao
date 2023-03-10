@@ -72,14 +72,18 @@ enum {
 
 public:
 	Nao();
-	void move(double* target);
+	bool move(double* target);
 	double judge_position(double* p1, double* p2);
 	double vector_length(double v[]);
 	void motion_stop();
 	bool play_syn(Motion* mo);
 	bool need_stand();
 	void do_the_correct(int number);
-	void play_seq(Motion* mo);
+	double change_angle(double ang);
+	double ang_minus(double ang1, double ang2);
+	bool kick_towards(double* target, double* ballposition);
+	int change_direction(double* direction);
+	bool is_between_2_point(double* p1, double* p2);
 
 protected:
 	void readPositionSensor();
@@ -98,6 +102,7 @@ protected:
 	std::vector<Motion*> pMotion;
 	int error_id;
 	bool error_state;
+	bool dirty_kick_1;
 	//Motion hand_wave;
 	//Motion forwards;
 	//Motion backwards;

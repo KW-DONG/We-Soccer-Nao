@@ -8,7 +8,9 @@
 using namespace webots;
 
 #define CONFIG_PATH		"../config.ini"
-#define ALWAYS_PLAY_ON	1
+#define ALWAYS_PLAY_ON	0
+
+#define _SQ(X) (X)*(X)
 
 std::map<int, std::string> mPlayMode = {
 	{GM_BEFORE_KICK_OFF, "BeforeKickOff"},
@@ -29,10 +31,31 @@ std::map<int, std::string> mPlayMode = {
 	{GM_CORNER_KICK_RIGHT, "CornerKickRight"},
 };
 
+std::map<int, std::string> mPitchSection = {
+	{PS_LEFT_GOAL, "LeftGoal"},
+	{PS_LEFT_GOAL_AREA, "LeftGoalArea"},
+	{PS_LEFT_PENALTY_AREA, "LeftPenaltyArea"},
+	{PS_LEFT_NORMAL, "LeftNormal"},
+	{PS_OUT_LEFT_ENDLINE, "OutLeftEndline"},
+	{PS_OUT_RIGHT_ENDLINE, "OutRightEndline"},
+	{PS_OUT_SIDELINE, "OutSideLine"},
+	{PS_RIGHT_GOAL, "RightGoal"},
+	{PS_RIGHT_GOAL_AREA, "RightGoalArea"},
+	{PS_RIGHT_PENALTY_AREA, "RightPenaltyArea"},
+	{PS_RIGHT_NORMAL, "RightNormal"}
+};
+
 void _Node::updatePosition()
 {
+	memcpy(lastRotation, rotation, sizeof(rotation));
+	memcpy(lastTranslation, translation, sizeof(translation));
+	memcpy(lastDTranslation, dTranslation, sizeof(dTranslation));
+	lastVelocity = velocity;
 	memcpy(translation, pNode->getField("translation")->getSFVec3f(), sizeof(translation));
 	memcpy(rotation, pNode->getField("rotation")->getSFRotation(), sizeof(rotation));
+	for (int i = 0; i < 3; i++)
+		dTranslation[i] = translation[i] - dTranslation[i];
+	velocity = sqrt(_SQ(dTranslation[0]) + _SQ(dTranslation[1]) + _SQ(dTranslation[2]));
 }
 
 SoccerReferee::SoccerReferee()
@@ -85,9 +108,8 @@ SoccerReferee::SoccerReferee()
 	gameDuration = atoi(value);
 	
 	//team
-	static _PlayerNode _node;
+	static _Node _node;
 	_node.isReady = false;
-	_node.role = _PlayerNode::PLAYER;
 	for (int i = 0; i < teamPlayerNum; i++)
 	{	
 		std::string key = "DEF" + std::to_string(i);
@@ -98,16 +120,8 @@ SoccerReferee::SoccerReferee()
 			std::cerr << "No DEF " << value << " node found in the current world file" << std::endl;
 			exit(1);
 		}
-		_node.id = i;
-		_node.team = _PlayerNode::TEAM_LEFT;
-		//setSFVec3f
-		double startPoint[3] = {-penaltyVec[0], penaltyVec[1] - i, 0.33};
-		double startRot[4] = { 0,0,1,0 };
-		_node.pNode->getField("translation")->setSFVec3f(startPoint);
-		_node.pNode->getField("rotation")->setSFRotation(startRot);
 		vPlayerNodes.push_back(_node);
 	}
-	vPlayerNodes[vPlayerNodes.size()].role = _PlayerNode::GOAL_KEEPER;
 
 	for (int i = 0; i < teamPlayerNum; i++)
 	{
@@ -119,14 +133,11 @@ SoccerReferee::SoccerReferee()
 			std::cerr << "No DEF " << value << " node found in the current world file" << std::endl;
 			exit(1);
 		}
-		_node.id = i + teamPlayerNum;
-		_node.team = _PlayerNode::TEAM_RIGHT;
-		double startPoint[3] = { penaltyVec[0], penaltyVec[1] - i, 0.35 };
-		double startRot[4] = { 0,0,1,3.14 };
-		_node.pNode->getField("translation")->setSFVec3f(startPoint);
-		_node.pNode->getField("rotation")->setSFRotation(startRot);
 		vPlayerNodes.push_back(_node);
 	}
+
+	GetIniKeyString("Robot", "Z", CONFIG_PATH, value);
+	robotZ = atof(value);
 	
 	//ball
 	GetIniKeyString("Ball", "Diameter", CONFIG_PATH, value);
@@ -145,74 +156,64 @@ SoccerReferee::SoccerReferee()
 	pEmitter = getEmitter("emitter");
 	pReceiver = getReceiver("receiver");
 	pReceiver->enable(TIME_STEP);
-
-#if (ALWAYS_PLAY_ON)
-	gameMode = GM_PLAY_ON;
-#endif
 }
 
 void SoccerReferee::run()
 {
+	gameMode = GM_BEFORE_KICK_OFF;
+
 	while (step(TIME_STEP) != -1)
-	{		
-		readReceiver();
-		readPosition();	
-
-#if (!ALWAYS_PLAY_ON)
-		if (flag != FLG_HANDBALL_LEFT && flag != FLG_HANDBALL_RIGHT && flag != FLG_TIME_UP)
-			localReferee();
-		lastGameMode = gameMode;
-
-		stateDriver();
+	{				
+		readPosition();
+		findBallSection();
+		collisionDetection();
+		localReferee();
 
 		//boardcast playmode
 		if (lastGameMode != gameMode)
-#endif
 		{
+			lastGameMode = gameMode;
 			std::string msg = "(GS (time " + std::to_string(getTime()) + ") (pm " + mPlayMode[gameMode] + "))";
 			pEmitter->setChannel(-1);
 			pEmitter->send(msg.c_str(), msg.size()+1);
 			std::cout << msg << std::endl;
 		}
-		
+
 		//send position
 		{
 			std::string msg = "(See (";
 			msg = seeBall(msg);
 			for (int i = 0; i < totalPlayerNum; i++)
-			{
 				msg = seePlayer(msg, i);
-			}
+			
 			msg += "))";
 			pEmitter->send(msg.c_str(), msg.size()+1);
-			std::cout << msg << std::endl;
+			//std::cout << msg << std::endl;
 		}
 		
 		show();
-		if (gameDuration < getTime())
-			flag = FLG_TIME_UP;
 	}
 }
 
 void SoccerReferee::findNodeSection(_Node& node)
 {
-	if (node.translation[0] >= penaltyVec[0] &&
+	if (node.translation[0] <= -penaltyVec[0] &&
 		node.translation[1] <= penaltyVec[1] &&
 		node.translation[1] >= -penaltyVec[1])
 	{
-		if (node.translation[0] >= goalVec[0] &&
-			node.translation[1] <= goalVec[1] &&
-			node.translation[1] >= -goalVec[1])
+		if (node.translation[0] <= -goalAreaVec[0] &&
+			node.translation[1] <= goalAreaVec[1] &&
+			node.translation[1] >= -goalAreaVec[1])
 			node.section = PS_LEFT_GOAL_AREA;
 		else node.section = PS_LEFT_PENALTY_AREA;
 	}
-	else if (node.translation[0] <= -penaltyVec[0] &&
+	else if (node.translation[0] >= penaltyVec[0] &&
 		node.translation[1] <= penaltyVec[1] &&
 		node.translation[1] >= -penaltyVec[1])
 	{
-		if (node.translation[0] <= -goalVec[0] &&
-			node.translation[1] <= goalVec[1] &&
-			node.translation[1] >= -goalVec[1])
+		if (node.translation[0] >= goalAreaVec[0] &&
+			node.translation[1] <= goalAreaVec[1] &&
+			node.translation[1] >= -goalAreaVec[1])
 			node.section = PS_RIGHT_GOAL_AREA;
 		else node.section = PS_RIGHT_PENALTY_AREA;
 	}
@@ -228,12 +229,12 @@ void SoccerReferee::findBallSection()
 		ballNode.translation[1] < goalVec[1] && ballNode.translation[1] > -goalVec[1] &&
 		ballNode.translation[2] < goalZ)
 		ballNode.section = PS_LEFT_GOAL;
-	else if (ballNode.translation[0] < pitchVec[0] && ballNode.translation[0] < goalVec[0] &&
+	else if (ballNode.translation[0] > pitchVec[0] && ballNode.translation[0] > -goalVec[0] &&
 		ballNode.translation[1] < goalVec[1] && ballNode.translation[1] > -goalVec[1] &&
 		ballNode.translation[2] < goalZ)
-		ballNode.section = PS_LEFT_GOAL;
+		ballNode.section = PS_RIGHT_GOAL;
 	//ball hit ground
-	else if (ballNode.translation[2] <= ballDiameter)
+	else if (isBallHitGround())
 	{
 		if (ballNode.translation[0] < -pitchVec[0])
 			ballNode.section = PS_OUT_LEFT_ENDLINE;
@@ -241,11 +242,21 @@ void SoccerReferee::findBallSection()
 			ballNode.section = PS_OUT_RIGHT_ENDLINE;
 		else if (ballNode.translation[1] < -pitchVec[1] || ballNode.translation[1] > pitchVec[1])
 			ballNode.section = PS_OUT_SIDELINE;
+		else
+		{
+			findNodeSection(ballNode);
+			lastBallInBoundsPosition[0] = ballNode.translation[0];
+			lastBallInBoundsPosition[1] = ballNode.translation[1];
+		}
+		//std::cout << "hit ground " << ballNode.translation[0] << " " << ballNode.translation[1] << " " << mPitchSection[ballNode.section] << std::endl;
 	}
 	else
 	{
 		findNodeSection(ballNode);
+		lastBallInBoundsPosition[0] = ballNode.translation[0];
+		lastBallInBoundsPosition[1] = ballNode.translation[1];
 	}
+
 }
 
 void SoccerReferee::readPosition()
@@ -258,205 +269,187 @@ void SoccerReferee::readPosition()
 	ballNode.updatePosition();
 }
 
-void SoccerReferee::readReceiver()
+void SoccerReferee::collisionDetection()
 {
-	if (pReceiver->getQueueLength() > 0)
+	//is ball hit something
+	if (ballNode.velocity > 0.001 &&
+		(ballNode.velocity > ballNode.lastVelocity * 1.2 ||
+			ballNode.velocity < ballNode.lastVelocity * 0.8))
 	{
-		std::string data = (char*)pReceiver->getData();
-		std::string sHeader;
-		int offset = readHeader(data, sHeader, 0);
-
-		lastBallKeeperId = readId(data, offset);
-
-		if (sHeader == "RD")
+		double minDist2 = 0.06;	
+		//find which robot is the cloest to the ball
+		int id = -1;
+		for (int i = 0; i < totalPlayerNum; i++)
 		{
-			vPlayerNodes[lastBallKeeperId].isReady = true;
-		}
-		else
-		{
-			if (lastBallKeeperId < teamPlayerNum)
-				lastBallKeeperTeam = _PlayerNode::TEAM_LEFT;		
-			else				
-				lastBallKeeperTeam = _PlayerNode::TEAM_RIGHT;
+			double dx = vPlayerNodes[i].translation[0] - ballNode.translation[0];
+			double dy = vPlayerNodes[i].translation[1] - ballNode.translation[1];
 
-			memcpy(lastBallKeeperPosition, vPlayerNodes[lastBallKeeperId].translation, 2);
-			lastBallKeeperRole = vPlayerNodes[lastBallKeeperId].role;
-		
-			if (sHeader == "HB")
+			double dist2 = _SQ(dx) + _SQ(dy);
+			if (dist2 < minDist2)
 			{
-				if (lastBallKeeperTeam == _PlayerNode::TEAM_LEFT)
-				{
-					if (lastBallKeeperRole == _PlayerNode::GOAL_KEEPER)
-						flag = FLG_KICKBALL_LEFT;
-					else
-						flag = FLG_HANDBALL_LEFT;
-				}
-				else
-				{
-					if (lastBallKeeperRole == _PlayerNode::GOAL_KEEPER)
-						flag = FLG_KICKBALL_RIGHT;
-					else
-						flag = FLG_HANDBALL_RIGHT;
-				}
-			}
-			else if (sHeader == "KB")
-			{
-				if (lastBallKeeperRole == _PlayerNode::GOAL_KEEPER)
-					flag = FLG_KICKBALL_LEFT;
-				else
-					flag = FLG_KICKBALL_RIGHT;
+				minDist2 = dist2;
+				id = i;
 			}
 		}
-		pReceiver->nextPacket();
+		if (id != -1)
+		{
+			lastBallKeeperId = id;
+			lastBallKeeperPosition[0] = vPlayerNodes[id].translation[0];
+			lastBallKeeperPosition[1] = vPlayerNodes[id].translation[1];
+			lastBallKeeperSection = vPlayerNodes[id].section;
+		}
 	}
 }
 
 void SoccerReferee::localReferee()
-{		
-	if (gameMode == GM_BEFORE_KICK_OFF)
+{			
+	if (getTime() >= gameDuration)
 	{
-		bool isAllReady = true;
-		for (int i = 0; i < vPlayerNodes.size(); i++)
-		{
-			if (!vPlayerNodes[i].isReady)
-			{
-				isAllReady = false;
-				break;
-			}
-		}
-		if (isAllReady)
-			flag = FLG_PLAYER_READY;
+		gameMode = GM_GAME_OVER;
+	}
+	else if (gameMode == GM_BEFORE_KICK_OFF)
+	{
+		moveBall2D(0, 0);
+		initPlayerPosition();
+
+		if (lastGoalTeam == TEAM_LEFT)
+			gameMode = GM_KICK_OFF_RIGHT;
+		else
+			gameMode = GM_KICK_OFF_LEFT;
+
+		lastBallKeeperId = -1;
+	}
+	else if (gameMode == GM_KICK_OFF_LEFT)
+	{
+		if (lastBallKeeperId >= 0 && lastBallKeeperId < teamPlayerNum)
+			gameMode = GM_PLAY_ON;
+	}
+	else if (gameMode == GM_KICK_OFF_RIGHT)
+	{
+		if (lastBallKeeperId >= teamPlayerNum && lastBallKeeperId < totalPlayerNum)
+			gameMode = GM_PLAY_ON;
 	}
 	else if (gameMode == GM_PLAY_ON)
 	{
 		if (ballNode.section == PS_LEFT_GOAL)
-			flag = FLG_GOAL_RIGHT;
+		{
+			score[1]++;
+			lastGoalTeam = TEAM_RIGHT;
+			gameMode = GM_BEFORE_KICK_OFF;
+		}
 		else if (ballNode.section == PS_RIGHT_GOAL)
-			flag = FLG_GOAL_LEFT;
+		{
+			score[0]++;
+			lastGoalTeam = TEAM_LEFT;
+			gameMode = GM_BEFORE_KICK_OFF;
+		}
 		else if (ballNode.section == PS_OUT_SIDELINE)
 		{
-			if (lastBallKeeperTeam == _PlayerNode::TEAM_LEFT)
-				flag = FLG_OUT_OF_SIDELINE_LEFT;
+			moveBall2D(lastBallInBoundsPosition[0], lastBallInBoundsPosition[1]);
+			lastBallKeeperId = -1;
+			if (lastBallKeeperId < teamPlayerNum)
+				gameMode = GM_THROW_IN_RIGHT;
 			else
-				flag = FLG_OUT_OF_SIDELINE_RIGHT;
+				gameMode = GM_THROW_IN_LEFT;
 		}
 		else if (ballNode.section == PS_OUT_LEFT_ENDLINE)
-			flag = FLG_OUT_OF_ENDLINE_LEFT;
+		{
+			lastBallKeeperId = -1;
+			if (isTeamLeft(lastBallKeeperId))
+			{
+				//corner kick right
+				if (lastBallInBoundsPosition[1] > 0)
+					moveBall2D(-pitchVec[0], pitchVec[1]);
+				else
+					moveBall2D(-pitchVec[0], -pitchVec[1]);
+				gameMode = GM_CORNER_KICK_RIGHT;
+			}
+			else if (isTeamRight(lastBallKeeperId))
+			{
+				//goal kick left
+				moveBall2D(-(goalAreaVec[0] + penaltyVec[0]) * 0.5, 0);
+				gameMode = GM_GOAL_KICK_LEFT;
+			}
+		}
 		else if (ballNode.section == PS_OUT_RIGHT_ENDLINE)
-			flag = FLG_OUT_OF_ENDLINE_RIGHT;
-		//offside
-		else if (ballNode.section > PS_LEFT_GOAL || ballNode.section <= PS_LEFT_NORMAL)
+		{
+			lastBallKeeperId = -1;
+			if (lastBallKeeperId < teamPlayerNum)
+			{
+				//corner kick left
+				if (lastBallInBoundsPosition[1] > 0)
+					moveBall2D(pitchVec[0], pitchVec[1]);
+				else
+					moveBall2D(pitchVec[0], -pitchVec[1]);
+				gameMode = GM_CORNER_KICK_LEFT;
+			}
+			else
+			{
+				//goal kick right
+				moveBall2D((goalAreaVec[0] + penaltyVec[0]) * 0.5, 0);
+				gameMode = GM_GOAL_KICK_RIGHT;
+			}
+		}
+		else if (isBallInLeftHalf())
 		{
 			
 		}
-		else if (ballNode.section > PS_RIGHT_GOAL || ballNode.section <= PS_RIGHT_NORMAL)
+		else if (isBallInRightHalf())
 		{
 
 		}
 	}
-	else if (gameMode == GM_KICK_OFF_LEFT)
-	{
-		if (flag == FLG_KICKBALL_LEFT)
-			flag = FLG_COMPLETE;
-	}
-	else if (gameMode == GM_KICK_OFF_RIGHT)
-	{
-		if (flag == FLG_KICKBALL_RIGHT)
-			flag = FLG_COMPLETE;
-	}
 	else if (gameMode == GM_THROW_IN_LEFT)
 	{
-		if (flag == FLG_KICKBALL_LEFT)
-			flag = FLG_COMPLETE;
+		if (isTeamLeft(lastBallKeeperId))
+			gameMode = GM_PLAY_ON;
 	}
 	else if (gameMode == GM_THROW_IN_RIGHT)
 	{
-		if (flag == FLG_KICKBALL_RIGHT)
-			flag = FLG_COMPLETE;
+		if (isTeamRight(lastBallKeeperId))
+			gameMode = GM_PLAY_ON;
 	}
 	else if (gameMode == GM_GOAL_KICK_LEFT)
 	{
-		if (flag == FLG_KICKBALL_LEFT)
-			flag = FLG_COMPLETE;
+		if (isGoalKeeper(lastBallKeeperId) && isTeamLeft(lastBallKeeperId))
+			gameMode = GM_PLAY_ON;
 	}
 	else if (gameMode == GM_GOAL_KICK_RIGHT)
 	{
-		if (flag == FLG_KICKBALL_RIGHT)
-			flag = FLG_COMPLETE;
-	}
-	else if (gameMode == GM_FREE_KICK_LEFT)
-	{
-		if (flag == FLG_KICKBALL_LEFT)
-			flag = FLG_COMPLETE;
-	}
-	else if (gameMode == GM_FREE_KICK_RIGHT)
-	{
-		if (flag == FLG_KICKBALL_RIGHT)
-			flag = FLG_COMPLETE;
-	}
-	else if (gameMode == GM_PENALTY_KICK_LEFT)
-	{
-		if (flag == FLG_KICKBALL_LEFT)
-			flag = FLG_COMPLETE;
-	}
-	else if (gameMode == GM_PENALTY_KICK_RIGHT)
-	{
-		if (flag == FLG_KICKBALL_RIGHT)
-			flag = FLG_COMPLETE;
+		if (isGoalKeeper(lastBallKeeperId) && isTeamRight(lastBallKeeperId))
+			gameMode = GM_PLAY_ON;
 	}
 	else if (gameMode == GM_CORNER_KICK_LEFT)
 	{
-		if (flag == FLG_KICKBALL_LEFT)
-			flag = FLG_COMPLETE;
+		if (isTeamLeft(lastBallKeeperId))
+			gameMode = GM_PLAY_ON;
 	}
 	else if (gameMode == GM_CORNER_KICK_RIGHT)
 	{
-		if (flag == FLG_KICKBALL_RIGHT)
-			flag = FLG_COMPLETE;
+		if (isTeamRight(lastBallKeeperId))
+			gameMode = GM_PLAY_ON;
 	}
 }
 
-void SoccerReferee::stateDriver()
+bool SoccerReferee::isTeamLeft(int id)
 {
-	switch (flag)
-	{
-	case FLG_START:
-		onStart();
-		break;
-	case FLG_OUT_OF_ENDLINE_LEFT:
-		onOutOfEndLineLeft();
-		break;
-	case FLG_OUT_OF_ENDLINE_RIGHT:
-		onOutOfEndLineRight();
-		break;
-	case FLG_OUT_OF_SIDELINE_LEFT:
-		onOutOfSideLineLeft();
-		break;
-	case FLG_OUT_OF_SIDELINE_RIGHT:
-		onOutOfSideLineRight();
-		break;
-	case FLG_OFFSIDE_LEFT:
-		onOffsideLeft();
-		break;
-	case FLG_OFFSIDE_RIGHT:
-		onOffsideRight();
-		break;
-	case FLG_GOAL_LEFT:
-		onGoalLeft();
-		break;
-	case FLG_GOAL_RIGHT:
-		onGoalRight();
-		break;
-	case FLG_HANDBALL_LEFT:
-		onHandballLeft();
-		break;
-	case FLG_HANDBALL_RIGHT:
-		onHandballRight();
-		break;
-	case FLG_TIME_UP:
-		onTimeUp();
-		break;
-	}
+	if (id >= 0 && id < teamPlayerNum)
+		return true;
+	return false;
+}
+
+bool SoccerReferee::isTeamRight(int id)
+{
+	if (id >= teamPlayerNum && id < totalPlayerNum)
+		return true;
+	return false;
+}
+
+bool SoccerReferee::isGoalKeeper(int id)
+{
+	if (id == teamPlayerNum - 1 || id == totalPlayerNum - 1)
+		return true;
+	return false;
 }
 
 bool SoccerReferee::isBallHitGround()
@@ -465,134 +458,71 @@ bool SoccerReferee::isBallHitGround()
 	return false;
 }
 
-//call this only once
-void SoccerReferee::onStart()
+bool SoccerReferee::isBallInLeftHalf()
 {
-	//start game timer
+	if (ballNode.section > PS_LEFT_GOAL || ballNode.section <= PS_LEFT_NORMAL)
+		return true;
+	return false;
+}
 
-	//update display
-	if (flag == FLG_PLAYER_READY)
+bool SoccerReferee::isBallInRightHalf()
+{
+	if (ballNode.section > PS_RIGHT_GOAL || ballNode.section <= PS_RIGHT_NORMAL)
+		return true;
+	return false;
+}
+
+void SoccerReferee::initPlayerPosition()
+{	
+	for (int i = 0; i < teamPlayerNum; i++)
 	{
-		gameMode = GM_BEFORE_KICK_OFF;
-		flag = FLG_NONE;
-	}
-}
-
-void SoccerReferee::onPlayerReady()
-{
-	if (lastGoalTeam == _PlayerNode::TEAM_LEFT)
-		gameMode = GM_KICK_OFF_RIGHT;
-	else
-		gameMode = GM_KICK_OFF_LEFT;
-	double _point[3] = { 0.0, 0.0, ballDiameter };
-	ballNode.pNode->getField("translation")->setSFVec3f(_point);
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onOutOfEndLineLeft()
-{
-	if (lastBallKeeperTeam == _PlayerNode::TEAM_LEFT)
-		gameMode = GM_CORNER_KICK_LEFT;
-	else
-		gameMode = GM_GOAL_KICK_LEFT;
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onOutOfEndLineRight()
-{
-	if (lastBallKeeperTeam == _PlayerNode::TEAM_LEFT)
-		gameMode = GM_GOAL_KICK_RIGHT;
-	else
-		gameMode = GM_CORNER_KICK_RIGHT;
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onOutOfSideLineLeft()
-{
-	gameMode = GM_THROW_IN_RIGHT;
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onOutOfSideLineRight()
-{
-	gameMode = GM_THROW_IN_LEFT;
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onOffsideLeft()
-{
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onOffsideRight()
-{
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onGoalLeft()
-{
-	score[0]++;
-	gameMode = GM_KICK_OFF_RIGHT;
-	flag = FLG_NONE;
-	double _point[3] = { 0.0, 0.0, ballDiameter };
-	ballNode.pNode->getField("translation")->setSFVec3f(_point);
-}
-
-void SoccerReferee::onGoalRight()
-{
-	score[1]++;
-	gameMode = GM_KICK_OFF_LEFT;
-	flag = FLG_NONE;
-	double _point[3] = { 0.0, 0.0, ballDiameter };
-	ballNode.pNode->getField("translation")->setSFVec3f(_point);
-}
-
-void SoccerReferee::onHandballLeft()
-{
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onHandballRight()
-{
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onTimeUp()
-{
-	gameMode = GM_GAME_OVER;
-	flag = FLG_NONE;
-}
-
-void SoccerReferee::onComplete()
-{
-	gameMode = GM_PLAY_ON;
-	flag = FLG_NONE;
-}
-
-int SoccerReferee::readHeader(std::string& src, std::string& dst, int offset)
-{
-	int start = 0;
-	int end = 0;
-	for (int i = offset; i < src.size(); i++)
-	{
-		if (src[i] == '(')
-			start = i;
-		else if (src[i] == ' ')
+		const double startRot[4] = { 0,0,1,0 };
+		double startPoint[3];
+			
+		//goal keeper
+		if (i == teamPlayerNum - 1)
 		{
-			end = i;
-			break;
+			startPoint[0] = -penaltyVec[0];
+			startPoint[1] = 0;
+			startPoint[2] = robotZ;
 		}
+		else
+		{
+			startPoint[0] = -centreD * 0.5; 
+			startPoint[1] = (teamPlayerNum - 1) * 0.25 - i * 0.5;
+			startPoint[2] = robotZ;
+		}
+		vPlayerNodes[i].pNode->getField("rotation")->setSFRotation(startRot);
+		vPlayerNodes[i].pNode->getField("translation")->setSFVec3f(startPoint);
 	}
-	dst = src.substr(start, end - start);
-	return end;
+
+	for (int i = teamPlayerNum; i < totalPlayerNum; i++)
+	{
+		const double startRot[4] = { 0,0,1,3.14 };
+		double startPoint[3];
+
+		//goal keeper
+		if (i == totalPlayerNum - 1)
+		{
+			startPoint[0] = penaltyVec[0];
+			startPoint[1] = 0;
+			startPoint[2] = robotZ;
+		}
+		else
+		{
+			startPoint[0] = centreD * 0.5;
+			startPoint[1] = (teamPlayerNum - 1) * 0.25 - (i - teamPlayerNum)  * 0.5;
+			startPoint[2] = robotZ;
+		}
+		vPlayerNodes[i].pNode->getField("rotation")->setSFRotation(startRot);
+		vPlayerNodes[i].pNode->getField("translation")->setSFVec3f(startPoint);
+	}
 }
 
-int SoccerReferee::readId(std::string& src, int offset)
+void SoccerReferee::moveBall2D(double tx, double ty)
 {
-	size_t start = src.find("id ", offset) + 3;
-	size_t end = src.find(" )", start);
-	
-	return atoi(src.substr(start, end - start).c_str());
+	double _point[3] = { tx, ty, ballDiameter };
+	ballNode.pNode->getField("translation")->setSFVec3f(_point);
 }
 
 std::string SoccerReferee::seeBall(std::string& src)
@@ -607,7 +537,7 @@ std::string SoccerReferee::seeBall(std::string& src)
 std::string SoccerReferee::seePlayer(std::string& src, int index)
 {
 	std::string msg = src + "(P (id " + 
-		std::to_string(vPlayerNodes[index].id) + ") (ccs " + 
+		std::to_string(index) + ") (ccs " + 
 		std::to_string(vPlayerNodes[index].translation[0]) + " " +
 		std::to_string(vPlayerNodes[index].translation[1]) + " " +
 		std::to_string(vPlayerNodes[index].translation[2]) + "))";
@@ -690,9 +620,16 @@ void SoccerReferee::show()
 	std::string _score = "Score " + std::to_string(score[0]) + " : " + std::to_string(score[1]);
 	std::string _gameState = "Game State: " + mPlayMode[gameMode];
 	std::string _time = "Time: " + std::to_string(getTime()) + "s";
+	std::string _lastGoalTeam = "Last Goal Team: " + std::to_string(lastGoalTeam);
+	std::string _lastBallKeeper = "Last Ball Keeper: " + std::to_string(lastBallKeeperId);
+	//std::string _ballSection = "Ball Section: " + mPitchSection[ballNode.section];
+
 	cv::putText(mat, _score, cv::Point(50, 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
 	cv::putText(mat, _gameState, cv::Point(50, 50), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
 	cv::putText(mat, _time, cv::Point(200, 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
+	cv::putText(mat, _lastGoalTeam, cv::Point(400, 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
+	cv::putText(mat, _lastBallKeeper, cv::Point(400, 50), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
+	//cv::putText(mat, _ballSection, cv::Point(400, 80), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 0));
 
 	//ball
 	cv::circle(mat, cv::Point(ballNode.translation[0] * scale + offsetX,
@@ -703,9 +640,9 @@ void SoccerReferee::show()
 	for (int i = 0; i < vPlayerNodes.size(); i++)
 	{
 		cv::Scalar color;
-		if (vPlayerNodes[i].team == _PlayerNode::TEAM_LEFT)
+		if (isTeamLeft(i))
 			color = cv::Scalar(255, 0, 0);
-		else
+		else if (isTeamRight(i))
 			color = cv::Scalar(0, 0, 255);
 
 		cv::circle(mat, cv::Point(vPlayerNodes[i].translation[0] * scale + offsetX,
@@ -713,5 +650,5 @@ void SoccerReferee::show()
 	}
 
 	cv::imshow("Display", mat);
-	cv::waitKey(15);
+	cv::waitKey(50);
 }
