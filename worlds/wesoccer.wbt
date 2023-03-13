@@ -28,7 +28,7 @@ DEF Ball RobocupSoccerBall {
 }
 DEF red_0 Nao {
   translation -3.23 0 0.334
-  controller "void"
+  controller "player_controller"
   channel -1
 }
 DEF red_1 Nao {
