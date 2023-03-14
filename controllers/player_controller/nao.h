@@ -84,6 +84,9 @@ public:
 	bool kick_towards(double* target, double* ballposition);
 	int change_direction(double* direction);
 	bool is_between_2_point(double* p1, double* p2);
+	bool g02(double* centre, double radius, double rad);//À≥ ±’Î
+	bool g03(double* centre, double radius, double rad);//ƒÊ ±’Î
+
 
 protected:
 	void readPositionSensor();

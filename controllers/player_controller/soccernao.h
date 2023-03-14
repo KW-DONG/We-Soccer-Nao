@@ -54,6 +54,7 @@ namespace webots {
 		int action_type;
 	};
 
+
 class SoccerNao : public Nao
 {
 public:
@@ -67,6 +68,11 @@ public:
 	bool check_message(std::string message);
 	void thread_test();
 	void ready_to_play(int state);
+	void move_with_avoid_target(double* target);//避障
+	void getname_and_team();//获取名字和队伍
+	void carry_ball(double* target);//运球
+	void pass_ball(double* target);//传球
+
 private:
 	//std::thread receive;
 	int player_number;

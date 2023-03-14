@@ -31,7 +31,7 @@ SoccerNao::SoccerNao()
 	preceiver = getReceiver("receiver");
 	preceiver->enable(TIME_STEP);
 	preceiver->setChannel(-1);
-	std::cout << preceiver->getChannel() << std::endl;
+	std::cout << getName() << std::endl;
 	gamemode = mPlayMode[GM_NONE];
 	player_number = pemitter->getChannel();
 	//player_number = 0;
