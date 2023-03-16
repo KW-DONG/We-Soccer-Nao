@@ -28,44 +28,44 @@ DEF Ball RobocupSoccerBall {
 }
 DEF red_0 Nao {
   translation -3.23 0 0.334
-  name "NAO1"
+  name "NAO0"
   controller "player_controller"
   channel -1
 }
 DEF red_1 Nao {
   translation -2.35 0 0.334
-  name "NAO(2)"
+  name "NAO1"
   controller "player_controller"
   channel -1
 }
 DEF red_2 Nao {
   translation -0.86 0 0.334
-  name "NAO(3)"
+  name "NAO2"
   controller "void"
 }
 DEF red_3 Nao {
   translation -1.69 0 0.334
-  name "NAO(4)"
+  name "NAO3"
   controller "void"
 }
 DEF blue_0 Nao {
   translation 2.1 0 0.334
-  name "NAO(1)"
+  name "NAO4"
   controller "void"
   channel -1
 }
 DEF blue_1 Nao {
-  name "NAO(5)"
+  name "NAO5"
   controller "void"
 }
 DEF blue_2 Nao {
   translation 0.48 0 0.334
-  name "NAO(6)"
+  name "NAO6"
   controller "void"
 }
 DEF blue_3 Nao {
   translation 1.57 0 0.334
-  name "NAO(7)"
+  name "NAO7"
   controller "void"
 }
 TexturedBackgroundLight {
