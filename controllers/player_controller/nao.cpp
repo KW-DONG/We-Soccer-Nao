@@ -143,6 +143,7 @@ Nao::Nao()
 	error_state = false;
 	error_id = -1;
 	dirty_kick_1 = false;
+	dirtu_circle_1 = false;
 }
 
 void Nao::readPositionSensor()
@@ -462,4 +463,35 @@ bool Nao::is_between_2_point(double* p1, double* p2)
 	double cur_position[] = { in_position[0], in_position[1] };
 	//if()
 	return (cur_position[0]<p2[0] && cur_position[0]>p1[0] && cur_position[1]<p2[1] && cur_position[1]>p1[1]);
+}
+
+bool Nao::g03(double* centre, double radius, double rad)
+{
+	double center_2d[] = { centre[0], centre[1] };
+	const double* in_position = pGPS->getValues();
+	double cur_position[] = { in_position[0], in_position[1] };
+	if (judge_position(cur_position, center_2d) > radius && !dirtu_circle_1)
+	{
+		return move(center_2d);
+	}
+	else
+	{
+		if (dirtu_circle_1 == false)
+		{
+			dirtu_circle_1 = true;
+		}
+		std::cout << "on the way3" << std::endl;
+		double ver_direction[] = {center_2d[0] - cur_position[0], center_2d[1] - cur_position[1]};
+		double direction[] = { cur_position[1] - center_2d[1], center_2d[0] - cur_position[0] };
+		double target[] = { cur_position[0] + direction[0], cur_position[1] + direction[1]};
+		if (!move(target))
+		{
+			dirtu_circle_1 = false;
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
 }

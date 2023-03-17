@@ -106,6 +106,7 @@ protected:
 	int error_id;
 	bool error_state;
 	bool dirty_kick_1;
+	bool dirtu_circle_1;
 	//Motion hand_wave;
 	//Motion forwards;
 	//Motion backwards;
