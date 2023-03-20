@@ -65,7 +65,7 @@ const std::vector<std::string> vMotionName = {
 	"motion/TurnLeft60.motion", "motion/TurnRight60.motion",
 	"motion/TurnLeft40.motion", "motion/TurnRight40.motion",
 	"motion/TurnLeft180.motion","motions/Shoot.motion",
-	"motion/StandUpFromFront.motion"
+	"motion/StandUpFromFront.motion", "motion/TrunLeft20.motion"
 };
 
 Nao::Nao()
