@@ -63,7 +63,7 @@ enum {
 
 enum {
 	hand_wave, forwards, turn_left_60, turn_right_60, turn_left_40, turn_right_40,
-	turn_left_180, shoot, standup_fromfront
+	turn_left_180, shoot, standup_fromfront, turn_left_20
 };
 
 enum {
@@ -84,6 +84,9 @@ public:
 	bool kick_towards(double* target, double* ballposition);
 	int change_direction(double* direction);
 	bool is_between_2_point(double* p1, double* p2);
+	bool g02(double* centre, double radius, double rad);//À≥ ±’Î
+	bool g03(double* centre, double radius, double rad);//ƒÊ ±’Î
+
 
 protected:
 	void readPositionSensor();
@@ -103,6 +106,7 @@ protected:
 	int error_id;
 	bool error_state;
 	bool dirty_kick_1;
+	bool dirtu_circle_1;
 	//Motion hand_wave;
 	//Motion forwards;
 	//Motion backwards;

@@ -65,7 +65,7 @@ const std::vector<std::string> vMotionName = {
 	"motion/TurnLeft60.motion", "motion/TurnRight60.motion",
 	"motion/TurnLeft40.motion", "motion/TurnRight40.motion",
 	"motion/TurnLeft180.motion","motions/Shoot.motion",
-	"motion/StandUpFromFront.motion"
+	"motion/StandUpFromFront.motion", "motion/TrunLeft20.motion"
 };
 
 Nao::Nao()
@@ -143,6 +143,7 @@ Nao::Nao()
 	error_state = false;
 	error_id = -1;
 	dirty_kick_1 = false;
+	dirtu_circle_1 = false;
 }
 
 void Nao::readPositionSensor()
@@ -152,7 +153,7 @@ void Nao::readPositionSensor()
 		vPositionSensorValue[i] = vPositionSensor[i]->getValue();
 	}
 }
-
+// walk towards the target 移动到target的位置
 bool Nao::move(double* target)
 {
 	//motion_stop();
@@ -240,17 +241,17 @@ bool Nao::move(double* target)
 	//motion_stop();
 	return false;
 }
-
+// calculate the distance between two points 计算两点间的距离
 double Nao::judge_position(double* p1, double* p2)
 {
 	return sqrt(pow(p1[0] - p2[0], 2) + pow(p1[1] - p2[1], 2));
 }
-
+// calculate the length of a vector 计算一个向量的长度
 double Nao::vector_length(double v[])
 {
 	return sqrt(pow(v[0], 2) + pow(v[1], 2));
 }
-
+// judge whether to turn right , left, or go straight 判断如何转向，还是直走
 int Nao::change_direction(double* direction)
 {
 	double direct_angle = acos((direction[0]) / vector_length(direction));
@@ -276,7 +277,7 @@ int Nao::change_direction(double* direction)
 		return turn_right_40;
 	}
 }
-
+// stop all the motion 停止所有的motion
 void Nao::motion_stop()
 {
 	//current_motion->stop();
@@ -290,7 +291,7 @@ void Nao::motion_stop()
 	}
 	current_motion = NULL;
 }
-
+// start one motion 启动motion
 bool Nao::play_syn(Motion* mo)
 {
 	
@@ -312,7 +313,7 @@ bool Nao::play_syn(Motion* mo)
 	//current_motion = NULL;
 	return true;
 }
-
+// judge whether need to stand 判断是否跌倒
 bool Nao::need_stand()
 {
 	//motion_stop();
@@ -335,7 +336,7 @@ bool Nao::need_stand()
 	std::cout << "need false" << std::endl;
 	return false;
 }
-
+// correct the state 根据意外类型做出相应的纠正，目前只有跌倒后爬起来
 void Nao::do_the_correct(int number)
 {
 	/*if (current_motion != NULL)
@@ -385,7 +386,7 @@ void Nao::do_the_correct(int number)
 		
 	}
 }
-
+// change the domain of the degree 将[-PI, PI]转化到[0, 2PI]
 double Nao::change_angle(double ang)
 {
 	if (ang < 0)
@@ -395,7 +396,7 @@ double Nao::change_angle(double ang)
 	else
 		return ang;
 }
-
+// calculate the relative difference of two angles 计算两个角之间的相对差，因为这里面角的减法涉及一圈，需要得到一个[-PI, PI]的值
 double Nao::ang_minus(double ang1, double ang2)
 {
 	if (ang1 >= 0)
@@ -419,7 +420,7 @@ double Nao::ang_minus(double ang1, double ang2)
 			return ang1 - ang2;
 	}
 }
-
+// kick towards to the target 带球向目标点踢
 bool Nao::kick_towards(double* target, double* ballposition)
 {
 	double kick_direction[] = { target[0] - ballposition[0], target[1] - ballposition[1] };
@@ -455,11 +456,42 @@ bool Nao::kick_towards(double* target, double* ballposition)
 		}
 	}
 }
-
+// 不够robust，放弃了
 bool Nao::is_between_2_point(double* p1, double* p2)
 {
 	const double* in_position = pGPS->getValues();
 	double cur_position[] = { in_position[0], in_position[1] };
 	//if()
 	return (cur_position[0]<p2[0] && cur_position[0]>p1[0] && cur_position[1]<p2[1] && cur_position[1]>p1[1]);
+}
+
+bool Nao::g03(double* centre, double radius, double rad)
+{
+	double center_2d[] = { centre[0], centre[1] };
+	const double* in_position = pGPS->getValues();
+	double cur_position[] = { in_position[0], in_position[1] };
+	if (judge_position(cur_position, center_2d) > radius && !dirtu_circle_1)
+	{
+		return move(center_2d);
+	}
+	else
+	{
+		if (dirtu_circle_1 == false)
+		{
+			dirtu_circle_1 = true;
+		}
+		std::cout << "on the way3" << std::endl;
+		double ver_direction[] = {center_2d[0] - cur_position[0], center_2d[1] - cur_position[1]};
+		double direction[] = { cur_position[1] - center_2d[1], center_2d[0] - cur_position[0] };
+		double target[] = { cur_position[0] + direction[0], cur_position[1] + direction[1]};
+		if (!move(target))
+		{
+			dirtu_circle_1 = false;
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
 }

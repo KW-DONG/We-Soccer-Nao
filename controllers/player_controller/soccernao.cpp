@@ -31,10 +31,17 @@ SoccerNao::SoccerNao()
 	preceiver = getReceiver("receiver");
 	preceiver->enable(TIME_STEP);
 	preceiver->setChannel(-1);
-	std::cout << preceiver->getChannel() << std::endl;
 	gamemode = mPlayMode[GM_NONE];
-	player_number = pemitter->getChannel();
+	//player_number = pemitter->getChannel();
 	//player_number = 0;
+	//getname_and_team();
+	std::string name = getName();
+	std::smatch match;
+	////regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
+	std::regex pattern("(\\d)");
+	std::regex_search(name, match, pattern);
+	player_number = std::stoi(match[1]);
+	std::cout << "player number " << player_number << std::endl;
 	other_player = new double* [7];
 	for (int i = 0; i < 7; i++)
 	{
@@ -383,4 +390,40 @@ void SoccerNao::ready_to_play(int state)
 	case Error:
 
 	}*/
+}
+
+void SoccerNao::getname_and_team()
+{
+	std::string name = getName();
+	std::smatch match;
+	//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
+	std::regex pattern("\\d");
+	std::regex_search(name, match, pattern);
+	player_number = std::stoi(match[1]);
+	std::cout << player_number << std::endl;
+	team = player_number % 4;
+	role = player_number == 3 ? 0 : 1;
+}
+void carry_ball(double* target)  // target = position of ball
+{
+	/* 1. get the position of the ball (assuming each person's check is within a 1m circle centred on themselves) 
+       if ( There are no opposing players in this range  &&  The player was not in the shooting area)
+	    {    
+		     Make the robot face the ball
+		     start_motion(carryball)
+         }
+     */
+}void pass_ball(double* target)   //The difference between shoot, carry and pass is the difference in the angle of rotation of the knee joint
+{
+	/*
+	   1. get the position of the ball (assuming each person's check is within a 1m circle centred on themselves) 
+	   if ( There are some opposing players in this range  &&  The player was not in the shooting area)
+	   {
+	        Get the position of teammates
+			Calculate the distance between
+			Choose the nearest route
+			Make the robot face the ball
+			start_motion(passball)
+	   }
+	*/
 }
