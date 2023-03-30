@@ -54,37 +54,83 @@ namespace webots {
 		int action_type;
 	};
 
+	struct PlayerInfo {
+		double dist2ToBall;
+		int action;
+		double actionParam[2];
+	};
 
 class SoccerNao : public Nao
 {
 public:
 	SoccerNao();
 	void run();
-	void init(int number);
 	bool receive_message();
 	void read_message();
-	void getPosition(std::string str, std::vector<double>& pos);
-	void send_message(std::string header, std::string content);
+
+	//parse position information from string
+	void getPosition(std::string str, double* pos);
+	void sendMessage(std::string header, std::string content);
 	bool check_message(std::string message);
-	void thread_test();
-	void ready_to_play(int state);
-	void move_with_avoid_target(double* target);//避障
-	void getname_and_team();//获取名字和队伍
-	void carry_ball(double* target);//运球
-	void pass_ball(double* target);//传球
+
+	//void moveObstacleAvoidance(double* target);//避障
+	//void getname_and_team();//获取名字和队伍
+	void soccerPaser();
+
+	//check player id
+	bool isStriker(int id);
+	bool isDefender(int id);
+	bool isGoalKeeper(int id);
+	bool isTeamLeft(int id);
+	bool isTeamRight(int id);
+	bool isSameTeam(int id);
+	bool isKickOffTeam(int id);
+	bool isKickOffDefenderTeam(int id);
+	bool isThrowInTeam(int id);
+	bool isThrowInDefenderTeam(int id);
+	bool isCornerKickTeam(int id);
+	bool isCornerKickDefenderTeam(int id);
+	bool isClosest2Ball(int id);
+	bool isClosest2BallTeam(int id);
+	bool isClosest2BallDefender(int id);
+	bool isPlayerReach(int id, Vec2D vec);
+	bool isTeamGotBall();
+	bool isBallInPenaltyArea(int id);
+
+	//strategy
+	bool canShoot(int id);
+	bool canPassBall(int fId, int tId);
+	void getBestShootPlace(int id, Vec2D vec);
+	void getBestShootVec(int id, Vec2D vec);
+	void getBestPassBallPlace(int fId, Vec2D fVec, int tId, Vec2D tVec);
+	void getBestKickOffVec(int id, Vec2D vec);
+	void getBestThrowInVec(int id, Vec2D vec);
+	void getBestCornerKickVec(int id, Vec2D vec);
+
+	void getDefenderAttackPosition(int id, Vec2D pos);
+	
+	int getClosest2BallDefender();
+	int getClosest2BallStriker();
+	int getClosestStrikerId(int id);
+	int getClosestDefenderId(int id);
+
+
+	void setPlayerAction(int id, int action);
+	void setPlayerActionParam(int id, Vec2D param);
 
 private:
 	//std::thread receive;
 	int player_number;
 	std::vector<double> position;
+
 	//std::vector<std::vector<double>> other_player;
 	double** other_player;
 	std::vector<double> rotation;
 	std::vector<double> ball_position;
 	double gametime;
-	std::string gamemode;
-	int team;
-	int role;
+	int gameMode;
+	//int team;
+	//int role;
 	std::queue<std::string> messages;
 	std::queue<Action*> actions;
 	int player_state;
@@ -101,6 +147,41 @@ protected:
 	*	(P (teamRed) (id 1) (ccs 0.0 0.0 0.5))	//player
 	*	(P (teamBlue) (id 2) (ccs 2.0 1.0 0.5)))
 	*/
+
+private:
+	//pitch detail
+	double pitchVec[2];
+	double penaltyVec[2];
+	double goalAreaVec[2];
+	double goalVec[2];
+	double goalZ;
+	double penaltyMarkX;
+	double ballDiameter;
+	double robotZ;
+	double centreD;
+
+	int teamPlayerNum;
+	int playerId;
+	int playerTeam;
+	//int playerRole;
+
+	//action
+	int action;
+	double actionParam[2];
+
+	//positions for all player from both teams
+	std::vector<std::vector<double>> playerPositions;
+	
+	//the ball position
+	double ballPosition[3];
+
+	//player action info for all player
+	std::vector<PlayerInfo> vPlayerInfo;
+
+	//a sorted playerId vector, lower index means closer to the ball;
+	std::vector<int> vDist2Rnk;
+	std::vector<int> vDist2RnkTeam;
+
 };
 
 }
