@@ -1,8 +1,32 @@
 #include "soccernao.h"
 #include <Windows.h>
+#include <algorithm>
+#include <utility>
 #include "../global/global.h"
 
 #define CONFIG_PATH		"../config.ini"
+
+#define ROLE_STRIKER		0
+#define ROLE_DEFENDER		1
+#define ROLE_GOAL_KEEPER	2
+
+#define ACTION_NONE			0
+#define ACTION_KICK			1
+#define ACTION_PASS			2
+#define ACTION_DRIBBLE		3
+#define ACTION_RUN			4
+#define ACTION_INTERCEPT	5
+
+#define TEAM_LEFT			0
+#define TEAM_RIGHT			1
+
+#define STRIKER_NUM			1
+
+#define SQ(x) (x)*(x)
+#define DIST2D(vec1 , vec2) (SQ(vec1[0] - vec2[0]) + SQ(vec1[1] - vec2[1]))
+#define DOT(vec1,vec2)	((vec1[0] - vec2[0]) * (vec1[1] - vec2[1]))
+#define MAX(x,y)	(x > y ? x : y)
+#define MIN(x,y)	(x < y ? x : y)
 
 using namespace webots;
 
@@ -27,129 +51,342 @@ std::map<int, std::string> mPlayMode = {
 
 SoccerNao::SoccerNao()
 {
+	
+	//read configuration
+	char value[25] = { 0 };
+	GetIniKeyString("SoccerField", "PitchLength", CONFIG_PATH, value);
+	pitchVec[0] = atof(value) * 0.5;
+
+	GetIniKeyString("SoccerField", "PitchWidth", CONFIG_PATH, value);
+	pitchVec[1] = atof(value) * 0.5;
+
+	GetIniKeyString("SoccerField", "PenaltyAreaLength", CONFIG_PATH, value);
+	penaltyVec[0] = pitchVec[0] - atof(value);
+
+	GetIniKeyString("SoccerField", "PenaltyAreaWidth", CONFIG_PATH, value);
+	penaltyVec[1] = atof(value) * 0.5;
+
+	GetIniKeyString("SoccerField", "GoalAreaLength", CONFIG_PATH, value);
+	goalAreaVec[0] = pitchVec[0] - atof(value);
+
+	GetIniKeyString("SoccerField", "GoalAreaWidth", CONFIG_PATH, value);
+	goalAreaVec[1] = atof(value) * 0.5;
+
+	GetIniKeyString("SoccerField", "GoalDepth", CONFIG_PATH, value);
+	goalVec[0] = pitchVec[0] + atof(value);
+
+	GetIniKeyString("SoccerField", "GoalWidth", CONFIG_PATH, value);
+	goalVec[1] = atof(value) * 0.5;
+
+	GetIniKeyString("SoccerField", "GoalHeight", CONFIG_PATH, value);
+	goalZ = atof(value);
+
+	GetIniKeyString("SoccerField", "PenaltyMarkDistance", CONFIG_PATH, value);
+	penaltyMarkX = atof(value);
+
+	GetIniKeyString("SoccerField", "BallDiameter", CONFIG_PATH, value);
+	ballDiameter = atof(value);
+
+	GetIniKeyString("SoccerField", "CentreCircleDiameter", CONFIG_PATH, value);
+	centreD = atof(value);
+
+	GetIniKeyString("Game", "PlayerNum", CONFIG_PATH, value);
+	teamPlayerNum = atoi(value);
+
+	//init player position vector
+	playerPositions.resize(teamPlayerNum * 2);
+	for (int i = 0; i < playerPositions.size(); i++)
+	{
+		playerPositions[i].resize(3);
+	}
+
+	vPlayerInfo.resize(teamPlayerNum * 2);
+	vDist2Rnk.resize(teamPlayerNum * 2);
+	vDist2RnkTeam.resize(teamPlayerNum);
+
+	//get robot information
+	playerId = std::stod(getName());
+	playerTeam = playerId >= teamPlayerNum ? TEAM_RIGHT : TEAM_LEFT;
+
 	pemitter = getEmitter("emitter");
 	preceiver = getReceiver("receiver");
 	preceiver->enable(TIME_STEP);
 	preceiver->setChannel(-1);
-	gamemode = mPlayMode[GM_NONE];
-	//player_number = pemitter->getChannel();
-	//player_number = 0;
-	//getname_and_team();
-	std::string name = getName();
-	std::smatch match;
-	////regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
-	std::regex pattern("(\\d)");
-	std::regex_search(name, match, pattern);
-	player_number = std::stoi(match[1]);
-	std::cout << "player number " << player_number << std::endl;
-	other_player = new double* [7];
-	for (int i = 0; i < 7; i++)
+}
+
+void SoccerNao::soccerPaser()
+{
+	
+	//update player info
+	std::vector<std::pair<int, double>> _dist2Pair;
+	for (int i = 0; i < playerPositions.size(); i++)
 	{
-		other_player[i] = new double[3];
+		double _dist2ToBall = DIST2D(playerPositions[i + playerTeam * teamPlayerNum], ballPosition);
+		vPlayerInfo[i].dist2ToBall = _dist2ToBall;
+		_dist2Pair.push_back(std::make_pair(i, _dist2ToBall));
 	}
-	team = player_number % 4;
-	//other_player = new std::vector<double>[7];
-	role = player_number == 3 ? 0 : 1;
-	player_state = Normal;
+
+	std::sort(_dist2Pair.begin(), _dist2Pair.end(), [=](std::pair<int, double> elem1, std::pair<int, double> elem2) {return elem1.second > elem2.second; });
+
+	vDist2RnkTeam.clear();
+	for (int i = 0; i < vDist2Rnk.size(); i++)
+	{
+		int id = _dist2Pair[i].first;
+		vDist2Rnk[i] = id;
+		if (isSameTeam(id))
+			vDist2RnkTeam.push_back(id);
+	}
+
+	//update player action
+	for (int i = 0; i < teamPlayerNum; i++)
+	{
+		int _playerId = playerTeam * teamPlayerNum + i;
+		//striker
+		if (isStriker(_playerId))
+		{
+			if (gameMode == GM_PLAY_ON)
+			{
+				//The striker will be goal focussed when the team has the ball
+				//The striker got the ball
+				if (isClosest2Ball(_playerId))
+				{
+					if (canShoot(_playerId))
+					{
+						//kick toward the goal
+						setPlayerAction(_playerId, ACTION_KICK);
+
+						double vec[2] = { 0.0, 0.0 };
+						getBestShootVec(_playerId, vec);
+						setPlayerActionParam(_playerId, vec);
+					}
+					else
+					{
+						//dribble the ball to another place
+						getBestShootPlace(_playerId, vPlayerInfo[_playerId].actionParam);
+					}
+				}
+				//Team got the ball
+				else if (isTeamGotBall())
+				{
+					//Cooperate with teammates to pass the ball
+					setPlayerAction(_playerId, ACTION_RUN);
+					//The action param will be set by teammats;
+				}
+				//When the team does not have the ball then the striker behaviour will seek to intercept and gain control of the ball
+				else if (isClosest2BallTeam(_playerId))
+				{
+					//run towards the ball
+					setPlayerAction(_playerId, ACTION_RUN);
+				}
+				else
+				{
+					//wait for a pass from teammate
+					setPlayerAction(_playerId, ACTION_RUN);
+				}
+			}
+			else if (isKickOffTeam(_playerId))
+			{
+				double vec[2] = { 0.0,0.0 };
+				getBestKickOffVec(_playerId, vec);
+				setPlayerAction(_playerId, ACTION_KICK);
+				setPlayerActionParam(_playerId, vec);
+			}
+			else if (isKickOffDefenderTeam(_playerId))
+			{
+
+			}
+			else if (isThrowInTeam(_playerId))
+			{
+
+
+			}
+			else if (isThrowInDefenderTeam(_playerId))
+			{
+
+
+			}
+			else if (isCornerKickTeam(_playerId))
+			{
+
+
+			}
+			else if (isCornerKickDefenderTeam(_playerId))
+			{
+
+
+			}
+		}
+		else if (isDefender(_playerId))
+		{
+			if (gameMode == GM_PLAY_ON)
+			{
+				//The range of the defender could extend depending on the current situation of play
+				if (isClosest2Ball(_playerId))
+				{
+					//pass the ball to the closest striker
+					int strikerId = getClosestStrikerId(_playerId);
+					if (canPassBall(_playerId, strikerId))
+					{
+						vPlayerInfo[_playerId].action = ACTION_PASS;
+						setPlayerActionParam(_playerId, &playerPositions[strikerId][0]);
+					}
+					else
+					{
+						double fVec[2] = { 0,0 };
+						double tVec[2] = { 0,0 };
+
+						getBestPassBallPlace(_playerId, &playerPositions[_playerId][0], strikerId, &playerPositions[strikerId][0]);
+						setPlayerAction(_playerId, ACTION_RUN);
+						setPlayerActionParam(_playerId, fVec);
+						setPlayerActionParam(strikerId, tVec);
+					}
+				}
+				else if (isTeamGotBall())
+				{
+					double vec[2] = { 0,0 };
+					setPlayerAction(_playerId, ACTION_RUN);
+					getDefenderAttackPosition(_playerId, vec);
+					setPlayerActionParam(_playerId, vec);
+				}
+				else
+				{
+					//run towards the ball
+					setPlayerAction(_playerId, ACTION_RUN);
+					setPlayerActionParam(_playerId, ballPosition);
+				}
+			}
+			else if (isKickOffTeam(_playerId))
+			{
+
+			}
+			else if (isKickOffDefenderTeam(_playerId))
+			{
+
+			}
+			else if (isThrowInTeam(_playerId))
+			{
+
+
+			}
+			else if (isThrowInDefenderTeam(_playerId))
+			{
+
+
+			}
+			else if (isCornerKickTeam(_playerId))
+			{
+
+
+			}
+			else if (isCornerKickDefenderTeam(_playerId))
+			{
+
+
+			}
+		}
+		else if (isGoalKeeper(_playerId))
+		{
+			if (gameMode == GM_PLAY_ON)
+			{
+				if (isClosest2Ball(_playerId))
+				{
+					//pass to closest player
+					int closestDefenderId = getClosestDefenderId(_playerId);
+					if (canPassBall(_playerId, closestDefenderId))
+					{
+						setPlayerAction(_playerId, ACTION_PASS);
+						setPlayerActionParam(_playerId, &playerPositions[closestDefenderId][0]);
+					}
+					else
+					{
+						double fVec[2] = { 0,0 };
+						double tVec[2] = { 0,0 };
+
+						getBestPassBallPlace(_playerId, &playerPositions[_playerId][0], closestDefenderId, &playerPositions[closestDefenderId][0]);
+						setPlayerAction(_playerId, ACTION_RUN);
+						setPlayerActionParam(_playerId, fVec);
+						setPlayerActionParam(closestDefenderId, tVec);
+					}
+				}
+				else if (isBallInPenaltyArea(_playerId))
+				{
+					//run to the ball
+					setPlayerAction(_playerId, ACTION_RUN);
+					setPlayerActionParam(_playerId, ballPosition);
+				}
+			}
+			else if (isKickOffTeam(_playerId))
+			{
+
+
+			}
+			else if (isKickOffDefenderTeam(_playerId))
+			{
+
+			}
+			else if (isThrowInTeam(_playerId))
+			{
+
+
+			}
+			else if (isThrowInDefenderTeam(_playerId))
+			{
+
+
+			}
+			else if (isCornerKickTeam(_playerId))
+			{
+
+
+			}
+			else if (isCornerKickDefenderTeam(_playerId))
+			{
+
+
+			}
+		}
+	}
+	
 }
 
 void SoccerNao::run()
 {
-	//std::thread t1(&SoccerNao::get_message, this);
 	int i = 0;
 
 	while (step(16) != -1)
 	{
-		std::cout << i++ << "sequence" << std::endl;
-		//send_message("1", "2");
+		//read message buffer
 		if (receive_message())
 		{
 			read_message();
 		}
-		std::cout << gamemode << std::endl;
-		if (gamemode == mPlayMode[GM_NONE])
-		{
-			//continue;
-		}
-		else if (gamemode == mPlayMode[GM_BEFORE_KICK_OFF])
-		{
 
-		}
-		else if (gamemode == mPlayMode[GM_PLAY_ON])
+		soccerPaser();
+
+		std::cout << ">> game mode: " << mPlayMode[gameMode] << std::endl;
+		std::cout << ">> player action: " << vPlayerInfo[playerId].action << std::endl;
+		std::cout << ">> player action param: " << vPlayerInfo[playerId].actionParam[0] << " " << vPlayerInfo[playerId].actionParam[1] << std::endl;
+
+
+		//check if need stand 
+		if (need_stand())
+			do_the_correct(0);
+		else
 		{
-			//play_syn(pMotion[1]);
-			// finding the ball and 
-			//std::cout << "goal!" << std::endl;
-			if (!ball_position.empty())
+			if (vPlayerInfo[playerId].action == ACTION_RUN)
 			{
-				double ball[] = { ball_position[0], ball_position[1]};
-				double goal[] = { -4.0, 0.0 };
-				/*std::cout << ball[0] << ball[1] << ball[2] << std::endl;
-				std::cout << "cxk" << std::endl;*/
-				/*if (!stand())
-				{
-					std::cout << "able to move" << std::endl;
-					move(ball);
-					std::cout << "yeah" << std::endl;
-				}*/
-				/*if (stand())
-				{
-					std::cout << "yeah" << std::endl;
-				}*/
-				std::cout << "error_state" << error_state << std::endl;
-				std::cout << "error_id" << error_id << std::endl;
-				//std::cout << "ball position" << ball_position[0] << ball_position[1] << std::endl;
-				//need_stand();
-				if (!need_stand() && error_state == false)
-				{
-					std::cout << "ready to move"  << std::endl;
-					if (current_motion != pMotion[7] || pMotion[7]->isOver())
-					{
-						if (!move(ball))
-						{
-							std::cout << "ready to shoot" << std::endl;
-							play_syn(pMotion[7]);
-						}
-					}
-					//play_syn(pMotion[7]);
-					//play_syn(pMotion[1]);
-					std::cout << "no" << std::endl;
-				}
-				else if (error_id == 0)
-				{
-					//motion_stop();
-					do_the_correct(0);
-					//error_state = false;
-					//error_id = -1;
-					
-					//play_syn(pMotion[8]);
-					std::cout << "yes" << std::endl;
-				}
-				//current_motion->play();
-				//std::cout << "goal!!!!" << std::endl;
-			
+				move(vPlayerInfo[playerId].actionParam);
+			}
+			else if (vPlayerInfo[playerId].action == ACTION_PASS)
+			{
+				kick_towards(vPlayerInfo[playerId].actionParam, ballPosition);
+			}
+			else if (vPlayerInfo[playerId].action == ACTION_KICK)
+			{
+				kick_towards(vPlayerInfo[playerId].actionParam, ballPosition);
 			}
 		}
-		if (current_motion == pMotion[1])
-		{
-			std::cout << "is moving" << std::endl;
-		}
-		else if (current_motion == pMotion[8])
-		{
-			std::cout << "is standing" << std::endl;
-		}
-		//std::cout << i << std::endl;
 	}
-	std::cout << "is over" << std::endl;
-	/*if (t1.joinable())
-	{
-		t1.join();
-	}*/
-}
-
-void SoccerNao::init(int number)
-{
-	//player_number = number;
 }
 
 bool SoccerNao::receive_message()
@@ -159,7 +396,6 @@ bool SoccerNao::receive_message()
 		Sleep(50);
 		return false;
 	}
-	std::cout << preceiver->getQueueLength() << std::endl;
 	std::string message;
 	bool sign = true;
 	while(preceiver->getQueueLength() > 0)
@@ -184,9 +420,9 @@ bool SoccerNao::receive_message()
 	return true;
 }
 
-void SoccerNao::getPosition(std::string str, std::vector<double>& pos)
+void SoccerNao::getPosition(std::string str, double* pos)
 {
-	int end = 0, index = 0;
+	int end = 0, index = 0, i = 0;
 	while (index < str.length())
 	{
 		end = str.find(" ", index);
@@ -194,21 +430,17 @@ void SoccerNao::getPosition(std::string str, std::vector<double>& pos)
 		{
 			end = str.length();
 		}
-		/*std::cout << std::stod(str.substr(index, end)) << std::endl;
-		std::cout << "in" << std::endl;*/
-		pos.push_back(std::stod(str.substr(index, end)));
+		pos[i] = std::stod(str.substr(index, end));
 		index = end + 1;
+		i++;
 	}
 }
 
 void SoccerNao::read_message()
 {
-	//std::cout << messages.size() << "read" << std::endl;
 	if (!messages.empty())
 	{
-
 		std::string message = messages.front();
-		std::cout << message + " read" << std::endl;
 		std::smatch match;
 		//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
 		std::regex pattern("\\((time|GS|See|B|P|KB|HB)\\s(\\(.*\\))\\)");
@@ -224,12 +456,8 @@ void SoccerNao::read_message()
 		}
 		else if (sHeader == "GS")
 		{
-			//double gametime;
-			//std::string gamemode;
-
 			for (std::sregex_iterator it(sBody.begin(), sBody.end(), pattern2), end_it; it != end_it; ++it)
 			{
-				//std::cout << it->str() << std::endl;
 				std::string info = it->str();
 				size_t index = info.find(" ");
 				std::string title = info.substr(0, index);
@@ -237,22 +465,26 @@ void SoccerNao::read_message()
 				if(title=="time")
 				{
 					gametime = std::stod(tail);
-					//std::cout << gametime << std::endl;
-					//std::cout << "time" << std::endl;
 				}
 				else if(title=="pm")
 				{
-					gamemode = tail;
+					for (auto it = mPlayMode.begin(); it != mPlayMode.end(); ++it)
+					{
+						if (it->second == tail)
+						{
+							gameMode = it->first;
+							break;
+						}
+					}
 				}
-				//gametime = std::stod(time_str);
 			}
 		}
+		//visual sensor
 		else if (sHeader == "See")
 		{
 			int sign = 0;
 			for (std::sregex_iterator it(sBody.begin(), sBody.end(), pattern2), end_it; it != end_it; ++it)
 			{
-				//cout << it->str() << endl;
 				std::string info = it->str();
 				
 				if (info == "B ")
@@ -265,44 +497,14 @@ void SoccerNao::read_message()
 				}
 				else if (sign == 0)
 				{
-					//std::vector<double> ball_position;
-					/*for (std::sregex_iterator it_b(info.begin(), info.end(), pattern2), end_itb; it_b != end_itb; ++it_b)
-					{
-						size_t first_cut = info.find(" ");
-						std::string title = info.substr(0, first_cut);
-						std::string tail = info.substr(first_cut + 1);
-						if (title == "css")
-						{
-							int end = 0, index = 0;
-							while (index < tail.length())
-							{
-								end = tail.find(" ", index);
-								if (end == std::string::npos)
-								{
-									end = tail.length();
-								}
-								ball_position.push_back(std::stod(tail.substr(index, end)));
-								index = end + 1;
-							}
-						}
-					}*/
 					size_t first_cut = info.find(" ");
 					std::string title = info.substr(0, first_cut);
 					std::string tail = info.substr(first_cut + 1);
-					//std::cout << "yes"+title << std::endl;
 					if (title == "ccs")
 					{
-						//std::cout << "yes" << std::endl;
 						ball_position.clear();
-						getPosition(tail, ball_position);
+						getPosition(tail, ballPosition);
 					}
-					/*for (int i = 0; i < ball_position.size(); i++)
-					{
-						std::cout << ball_position[i] << std::endl;
-					}
-					std::cout << "get ball" << std::endl;*/
-					std::cout << "get ball" << std::endl;
-					std::cout << "ball position" << ball_position[0] << ball_position[1] << std::endl;
 				}
 				else if (sign == 1)
 				{
@@ -316,17 +518,12 @@ void SoccerNao::read_message()
 					}
 					else if (title == "ccs")
 					{
-						std::vector<double> o_position;
+						//std::vector<double> o_position;
 						if (seq >= 0)
 						{
-							o_position.clear();
-							getPosition(tail, o_position);
-							other_player[seq][0] = o_position[0];
-							other_player[seq][1] = o_position[1];
-							other_player[seq][2] = o_position[2];
+							getPosition(tail, &playerPositions[seq][0]);
 						}
 					}
-					
 				}
 			}
 		}
@@ -341,7 +538,7 @@ void SoccerNao::read_message()
 	//return;
 }
 
-void SoccerNao::send_message(std::string header, std::string content)
+void SoccerNao::sendMessage(std::string header, std::string content)
 {
 	pemitter->setChannel(-1);
 	std::string mes = "hello" + player_number;
@@ -357,7 +554,7 @@ bool SoccerNao::check_message(std::string message)
 	if (std::regex_search(message, match, pattern1))
 	{
 		std::string s1 = match[1];
-		if (s1 != gamemode)
+		if (s1 != mPlayMode[gameMode])
 		{
 			return true;
 		}
@@ -365,65 +562,266 @@ bool SoccerNao::check_message(std::string message)
 	return false;
 }
 
-void SoccerNao::thread_test()
+
+inline bool SoccerNao::isStriker(int id)
 {
-	int n = 100;
-	while (n--)
+	return (id - teamPlayerNum * playerTeam) < STRIKER_NUM;
+}
+
+inline bool SoccerNao::isDefender(int id)
+{
+	return (id - teamPlayerNum * playerTeam) > STRIKER_NUM && id % teamPlayerNum != 0;
+}
+
+inline bool SoccerNao::isGoalKeeper(int id)
+{
+	return id % teamPlayerNum == 0;
+}
+
+inline bool SoccerNao::isTeamLeft(int id)
+{
+	return id < teamPlayerNum;
+}
+
+inline bool SoccerNao::isTeamRight(int id)
+{
+	return id >= teamPlayerNum;
+}
+
+inline bool SoccerNao::isSameTeam(int id)
+{
+	return ((playerTeam == TEAM_LEFT && isTeamLeft(id)) || (playerTeam == TEAM_RIGHT && isTeamRight(id)));
+}
+
+inline bool SoccerNao::isKickOffTeam(int id)
+{
+	return ((gameMode == GM_KICK_OFF_LEFT && isTeamLeft(id)) || (gameMode == GM_KICK_OFF_RIGHT && isTeamRight(id)));
+}
+
+inline bool SoccerNao::isKickOffDefenderTeam(int id)
+{
+	return ((gameMode == GM_KICK_OFF_LEFT && !isTeamLeft(id)) || (gameMode == GM_KICK_OFF_RIGHT && !isTeamRight(id)));
+}
+
+inline bool SoccerNao::isThrowInTeam(int id)
+{
+	return ((gameMode == GM_THROW_IN_LEFT && isTeamLeft(id)) || (gameMode == GM_THROW_IN_RIGHT && isTeamRight(id)));
+}
+
+inline bool SoccerNao::isThrowInDefenderTeam(int id)
+{
+	return ((gameMode == GM_THROW_IN_LEFT && !isTeamLeft(id)) || (gameMode == GM_THROW_IN_RIGHT && !isTeamRight(id)));
+}
+
+inline bool SoccerNao::isCornerKickTeam(int id)
+{
+	return ((gameMode == GM_CORNER_KICK_LEFT && isTeamLeft(id)) || (gameMode == GM_THROW_IN_RIGHT && isTeamRight(id)));
+}
+
+inline bool SoccerNao::isCornerKickDefenderTeam(int id)
+{
+	return ((gameMode == GM_CORNER_KICK_LEFT && !isTeamLeft(id)) || (gameMode == GM_THROW_IN_RIGHT && !isTeamRight(id)));
+}
+
+inline bool SoccerNao::isClosest2Ball(int id)
+{
+	return (vDist2Rnk[0] == id);
+}
+
+inline bool SoccerNao::isClosest2BallTeam(int id)
+{
+	return (vDist2RnkTeam[0] == id);
+}
+
+bool SoccerNao::isClosest2BallDefender(int id)
+{
+	int _id = 0;
+	for (int i = 0; i < vDist2RnkTeam.size(); i++)
 	{
-		std::cout << "thread test" << n << std::endl;
+		if (isDefender(vDist2RnkTeam[_id]))
+		{
+			_id = vDist2RnkTeam[_id];
+			break;
+		}
+	}
+	return _id == id;
+}
+
+inline bool SoccerNao::isPlayerReach(int id, Vec2D vec)
+{
+	return DIST2D(vec, playerPositions[id]) <= ballDiameter;
+}
+
+inline bool SoccerNao::isTeamGotBall()
+{
+	return ((isTeamLeft(vDist2Rnk[0]) && playerTeam == TEAM_LEFT) ||
+		((isTeamRight(vDist2Rnk[0]) && playerTeam == TEAM_RIGHT)));
+}
+
+inline bool SoccerNao::isBallInPenaltyArea(int id)
+{
+	if (isTeamLeft(id))
+		return (ballPosition[0] < -penaltyVec[0] && ballPosition[1] < penaltyVec[1] && ballPosition[1] > -penaltyVec[1]);
+	return (ballPosition[0] > penaltyVec[0] && ballPosition[1] < penaltyVec[1] && ballPosition[1] > -penaltyVec[1]);
+}
+
+inline bool SoccerNao::canShoot(int id)
+{
+	double goalVec[2] = { 0.0,0.0 };
+	goalVec[1] = isTeamLeft(id) ? pitchVec[0] : -pitchVec[0];
+	return DIST2D(playerPositions[id], goalVec) <= 5;
+}
+
+inline bool SoccerNao::canPassBall(int fId, int tId)
+{
+	return DIST2D(playerPositions[fId], playerPositions[tId]) <= 5;
+}
+
+inline void SoccerNao::getBestShootPlace(int id, Vec2D vec)
+{
+	vec[0] = isTeamLeft(id) ? goalAreaVec[0] : -goalAreaVec[0];
+	vec[1] = 0.0;
+}
+
+inline void SoccerNao::getBestShootVec(int id, Vec2D vec)
+{
+	vec[0] = isTeamLeft(id) ? pitchVec[0] : -pitchVec[0];
+	vec[1] = 0.0;
+}
+
+inline void SoccerNao::getBestPassBallPlace(int fId, Vec2D fVec, int tId, Vec2D tVec)
+{
+	memcpy(fVec, &playerPositions[tId][0], sizeof(&playerPositions[tId][0]));
+	memcpy(tVec, &playerPositions[fId][0], sizeof(&playerPositions[fId][0]));
+}
+
+inline void SoccerNao::getBestKickOffVec(int id, Vec2D vec)
+{
+	vec[1] = ballPosition[1];
+	vec[0] = isTeamLeft(id) ? (ballPosition[0] + 1) : (ballPosition[0] - 1);
+}
+
+inline void SoccerNao::getBestThrowInVec(int id, Vec2D vec)
+{
+	vec[0] = ballPosition[0];
+	vec[1] = ballPosition[1] > 0 ? (pitchVec[1] - 1) : (pitchVec[1] + 1);
+}
+
+inline void SoccerNao::getBestCornerKickVec(int id, Vec2D vec)
+{
+	vec[0] = ballPosition[0] > 0 ? pitchVec[0] - 1 : -pitchVec[0] + 1;
+	vec[1] = ballPosition[1] > 0 ? pitchVec[1] - 1 : -pitchVec[1] + 1;
+}
+
+void SoccerNao::getDefenderAttackPosition(int id, Vec2D pos)
+{
+	if (id == 1)
+	{
+		pos[0] = ballPosition[0] - 3;
+		pos[1] = ballPosition[1] + 3;
+
+	}
+	else if (id == 2)
+	{
+		pos[0] = ballPosition[0] - 3;
+		pos[1] = ballPosition[1] - 3;
+	}
+	else if (id == teamPlayerNum + 1)
+	{
+		pos[0] = ballPosition[0] + 3;
+		pos[1] = ballPosition[1] + 3;
+	}
+	else if (id == teamPlayerNum + 2)
+	{
+		pos[0] = ballPosition[0] + 3;
+		pos[1] = ballPosition[1] - 3;
 	}
 }
 
-void SoccerNao::ready_to_play(int state)
+int SoccerNao::getClosest2BallDefender()
 {
-	/*switch (player_state)
+	int id = 0;
+	for (int i = 0; i < vDist2RnkTeam.size(); i++)
 	{
-	case Normal:
-		double* ball = nullptr;
-		if (!ball_position.empty())
+		if (isDefender(vDist2RnkTeam[i]))
 		{
-			double ball[] = { ball_position[0], ball_position[1], ball_position[2] };
+			id = isDefender(vDist2RnkTeam[i]);
+			break;
 		}
-		struct Action* mov = new Action{ ball, NULL, Move };
-		actions.push(mov);
-
-	case Error:
-
-	}*/
+	}
+	return id;
 }
 
-void SoccerNao::getname_and_team()
+int SoccerNao::getClosest2BallStriker()
 {
-	std::string name = getName();
-	std::smatch match;
-	//regex pattern("\((time|GS|B|P)(\\s\(\\w+ [0-9.]+\))");
-	std::regex pattern("\\d");
-	std::regex_search(name, match, pattern);
-	player_number = std::stoi(match[1]);
-	std::cout << player_number << std::endl;
-	team = player_number % 4;
-	role = player_number == 3 ? 0 : 1;
+	int id = 0;
+	for (int i = 0; i < vDist2RnkTeam.size(); i++)
+	{
+		if (isStriker(vDist2RnkTeam[i]))
+		{
+			id = isStriker(vDist2RnkTeam[i]);
+			break;
+		}
+	}
+	return id;
 }
-void carry_ball(double* target)  // target = position of ball
+
+int SoccerNao::getClosestStrikerId(int id)
 {
-	/* 1. get the position of the ball (assuming each person's check is within a 1m circle centred on themselves) 
-       if ( There are no opposing players in this range  &&  The player was not in the shooting area)
-	    {    
-		     Make the robot face the ball
-		     start_motion(carryball)
-         }
-     */
-}void pass_ball(double* target)   //The difference between shoot, carry and pass is the difference in the angle of rotation of the knee joint
+	std::map<int, double> mStrikerList;
+
+	for (int i = 0; i < vDist2RnkTeam.size(); i++)
+	{
+		if (isStriker(vDist2RnkTeam[i]))
+			mStrikerList[vDist2RnkTeam[i]] = DIST2D(playerPositions[id], playerPositions[vDist2RnkTeam[i]]);
+	}
+
+	int strikerId = 0;
+	double dist = 1000.0;
+	std::map<int, double>::iterator iter;
+	
+	for (iter = mStrikerList.begin(); iter != mStrikerList.end(); iter++)
+	{
+		if (iter->second < dist)
+		{
+			dist = iter->second;
+			strikerId = iter->first;
+		}
+	}
+	return strikerId;
+}
+
+int SoccerNao::getClosestDefenderId(int id)
 {
-	/*
-	   1. get the position of the ball (assuming each person's check is within a 1m circle centred on themselves) 
-	   if ( There are some opposing players in this range  &&  The player was not in the shooting area)
-	   {
-	        Get the position of teammates
-			Calculate the distance between
-			Choose the nearest route
-			Make the robot face the ball
-			start_motion(passball)
-	   }
-	*/
+	std::map<int, double> mDefenderList;
+
+	for (int i = 0; i < vDist2RnkTeam.size(); i++)
+	{
+		if (isDefender(vDist2RnkTeam[i]))
+			mDefenderList[vDist2RnkTeam[i]] = DIST2D(playerPositions[id], playerPositions[vDist2RnkTeam[i]]);
+	}
+
+	int defenderId = 0;
+	double dist = 1000.0;
+	std::map<int, double>::iterator iter;
+
+	for (iter = mDefenderList.begin(); iter != mDefenderList.end(); iter++)
+	{
+		if (iter->second < dist)
+		{
+			dist = iter->second;
+			defenderId = iter->first;
+		}
+	}
+	return defenderId;
+}
+
+inline void SoccerNao::setPlayerAction(int id, int action)
+{
+	vPlayerInfo[id].action = action;
+}
+
+inline void SoccerNao::setPlayerActionParam(int id, Vec2D param)
+{
+	memcpy(vPlayerInfo[id].actionParam, param, sizeof(vPlayerInfo[id].actionParam));
 }
