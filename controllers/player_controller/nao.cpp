@@ -448,6 +448,7 @@ bool Nao::kick_towards(double* target, double* ballposition)
 		if (!move(ballposition))
 		{
 			dirty_kick_1 = false;
+			play_syn(pMotion[shoot]);
 			return false;
 		}
 		else
