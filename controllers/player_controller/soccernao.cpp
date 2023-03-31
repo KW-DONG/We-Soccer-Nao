@@ -116,7 +116,6 @@ SoccerNao::SoccerNao()
 
 void SoccerNao::soccerPaser()
 {
-	
 	//update player info
 	std::vector<std::pair<int, double>> _dist2Pair;
 	for (int i = 0; i < playerPositions.size(); i++)
@@ -197,8 +196,13 @@ void SoccerNao::soccerPaser()
 			}
 			else if (isThrowInTeam(_playerId))
 			{
-
-
+				if (isClosest2BallTeam(_playerId))
+				{
+					double vec[2] = { 0.0,0.0 };
+					getBestThrowInVec(_playerId, vec);
+					setPlayerAction(_playerId, ACTION_KICK);
+					setPlayerActionParam(_playerId, vec);
+				}
 			}
 			else if (isThrowInDefenderTeam(_playerId))
 			{
@@ -207,8 +211,13 @@ void SoccerNao::soccerPaser()
 			}
 			else if (isCornerKickTeam(_playerId))
 			{
-
-
+				if (isClosest2BallTeam(_playerId))
+				{
+					double vec[2] = { 0.0,0.0 };
+					getBestCornerKickVec(_playerId, vec);
+					setPlayerAction(_playerId, ACTION_KICK);
+					setPlayerActionParam(_playerId, vec);
+				}
 			}
 			else if (isCornerKickDefenderTeam(_playerId))
 			{
@@ -265,8 +274,13 @@ void SoccerNao::soccerPaser()
 			}
 			else if (isThrowInTeam(_playerId))
 			{
-
-
+				if (isClosest2BallTeam(_playerId))
+				{
+					double vec[2] = { 0.0,0.0 };
+					getBestThrowInVec(_playerId, vec);
+					setPlayerAction(_playerId, ACTION_KICK);
+					setPlayerActionParam(_playerId, vec);
+				}
 			}
 			else if (isThrowInDefenderTeam(_playerId))
 			{
@@ -275,8 +289,13 @@ void SoccerNao::soccerPaser()
 			}
 			else if (isCornerKickTeam(_playerId))
 			{
-
-
+				if (isClosest2BallTeam(_playerId))
+				{
+					double vec[2] = { 0.0,0.0 };
+					getBestCornerKickVec(_playerId, vec);
+					setPlayerAction(_playerId, ACTION_KICK);
+					setPlayerActionParam(_playerId, vec);
+				}
 			}
 			else if (isCornerKickDefenderTeam(_playerId))
 			{
@@ -562,7 +581,6 @@ bool SoccerNao::check_message(std::string message)
 	return false;
 }
 
-
 inline bool SoccerNao::isStriker(int id)
 {
 	return (id - teamPlayerNum * playerTeam) < STRIKER_NUM;
@@ -698,7 +716,7 @@ inline void SoccerNao::getBestPassBallPlace(int fId, Vec2D fVec, int tId, Vec2D 
 inline void SoccerNao::getBestKickOffVec(int id, Vec2D vec)
 {
 	vec[1] = ballPosition[1];
-	vec[0] = isTeamLeft(id) ? (ballPosition[0] + 1) : (ballPosition[0] - 1);
+	vec[0] = isTeamLeft(id) ? (ballPosition[0] + 2) : (ballPosition[0] - 2);
 }
 
 inline void SoccerNao::getBestThrowInVec(int id, Vec2D vec)
