@@ -440,6 +440,7 @@ bool Nao::kick_towards(Vec2D target, Vec2D ballposition)
 		if (!move(ballposition))
 		{
 			dirty_kick_1 = false;
+			play_syn(pMotion[shoot]);
 			return false;
 		}
 		else
