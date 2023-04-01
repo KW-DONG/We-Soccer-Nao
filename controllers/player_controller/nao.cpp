@@ -143,6 +143,7 @@ Nao::Nao()
 	error_state = false;
 	error_id = -1;
 	dirty_kick_1 = false;
+	dirty_kick_2 = false;
 	dirtu_circle_1 = false;
 }
 
@@ -430,13 +431,14 @@ bool Nao::kick_towards(double* target, double* ballposition)
 	double new_target[] = { ballposition[0] + new_bias[0],ballposition[1] + new_bias[1] };
 	std::cout << "new target" << new_target[0] << " " << new_target[1] << std::endl;
 	std::cout << "ball position" << ballposition[0] << " " << ballposition[1] << std::endl;
-	if (judge_position(cur_position, new_target) > 0.2 && !dirty_kick_1)
+	if (judge_position(cur_position, new_target) > 0.07 && !dirty_kick_1)
 	{
 		std::cout << "on the way" << std::endl;
-		double new_dir[] = { new_target[0] - cur_position[0], new_target[1] - cur_position[1] };
-		//play_syn(pMotion[change_direction(new_dir)]);
+		double new_dir[] = { new_target[0] - cur_position[0], new_target[1] - cur_position[1]};
+		play_syn(pMotion[change_direction(new_dir)]);
 		
-		return move(new_target);
+		//return move(new_target);
+		return true;
 	}
 	else
 	{
@@ -447,8 +449,12 @@ bool Nao::kick_towards(double* target, double* ballposition)
 		std::cout << "on the way2" << std::endl;
 		if (!move(ballposition))
 		{
-			dirty_kick_1 = false;
+			//dirty_kick_1 = false;
 			play_syn(pMotion[shoot]);
+			if (judge_position(cur_position, ballposition) > 0.2)
+			{
+				dirty_kick_1 = false;
+			}
 			return false;
 		}
 		else
