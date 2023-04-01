@@ -396,7 +396,7 @@ void SoccerNao::run()
 		//check if need stand 
 		if (need_stand())
 			do_the_correct(0);
-		else
+		else if(current_motion != pMotion[8] || pMotion[8]->isOver())
 		{
 			if (vPlayerInfo[playerId].action == ACTION_RUN)
 			{

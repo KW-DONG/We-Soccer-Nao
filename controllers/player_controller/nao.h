@@ -66,7 +66,7 @@ enum {
 
 enum {
 	hand_wave, forwards, turn_left_60, turn_right_60, turn_left_40, turn_right_40,
-	turn_left_180, shoot, standup_fromfront, turn_left_20
+	turn_left_180, shoot, standup_fromfront, turn_left_20, turn_right_20
 };
 
 enum {
@@ -108,7 +108,7 @@ protected:
 	std::vector<Motion*> pMotion;
 	int error_id;
 	bool error_state;
-	bool dirty_kick_1;
+	bool dirty_kick_toward;
 	bool dirty_kick_2;
 	bool dirtu_circle_1;
 	//Motion hand_wave;

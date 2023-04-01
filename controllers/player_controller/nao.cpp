@@ -65,7 +65,8 @@ const std::vector<std::string> vMotionName = {
 	"motion/TurnLeft60.motion", "motion/TurnRight60.motion",
 	"motion/TurnLeft40.motion", "motion/TurnRight40.motion",
 	"motion/TurnLeft180.motion","motions/Shoot.motion",
-	"motion/StandUpFromFront.motion", "motion/TrunLeft20.motion"
+	"motion/StandUpFromFront.motion", "motion/TurnLeft20.motion",
+	"motion/TurnLeft20.motion"
 };
 
 Nao::Nao()
@@ -131,7 +132,6 @@ Nao::Nao()
 		Motion* pmotion = new Motion(vMotionName[i]);
 		pMotion.push_back(pmotion);
 	}
-
 	/*Motion hand_wave("../../motions/HandWave.motion");
 	Motion forwards("../../motions/Forwards.motion");
 	Motion backwards("../../motions/Backwards.motion");
@@ -142,9 +142,10 @@ Nao::Nao()
 	current_motion = NULL;
 	error_state = false;
 	error_id = -1;
-	dirty_kick_1 = false;
+	dirty_kick_toward = false;
 	dirty_kick_2 = false;
 	dirtu_circle_1 = false;
+	pMotion[turn_right_20]->setReverse(true);
 }
 
 void Nao::readPositionSensor()
@@ -167,7 +168,7 @@ bool Nao::move(double* target)
 	//play_syn(pMotion[hand_wave]);
 	//std::cout << pMotion[hand_wave]->isValid() << std::endl;
 	
-	if (judge_position(target_2d, cur_position) > 0.2)
+	if (judge_position(target_2d, cur_position) > 0.185)
 	{
 		std::cout << judge_position(target_2d, cur_position) << std::endl;
 		//motion_stop();
@@ -259,7 +260,7 @@ int Nao::change_direction(double* direction)
 	direct_angle = direction[1] > 0 ? std::abs(direct_angle) : -std::abs(direct_angle);
 	double* rotation = (double*)pInertialUnit->getRollPitchYaw();
 	double cur_rotation = rotation[2];
-	if (ang_minus(cur_rotation, direct_angle) > -(PI / 9) && ang_minus(cur_rotation, direct_angle) < (PI / 9))
+	if (ang_minus(cur_rotation, direct_angle) > -(PI / 18) && ang_minus(cur_rotation, direct_angle) < (PI / 18))
 	{
 		//play_syn(pMotion[forwards]);
 		std::cout << "go straight" << std::endl;
@@ -275,7 +276,7 @@ int Nao::change_direction(double* direction)
 	{
 		//play_syn(pMotion[turn_right_40]);
 		std::cout << "turn right" << std::endl;
-		return turn_right_40;
+		return turn_right_20;
 	}
 }
 // stop all the motion Í£Ö¹ËùÓÐµÄmotion
@@ -429,37 +430,64 @@ bool Nao::kick_towards(double* target, double* ballposition)
 	double cur_position[] = { in_position[0], in_position[1] };
 	double new_bias[] = { kick_direction[0] * (-0.35) / vector_length(kick_direction),kick_direction[1] * (-0.35) / vector_length(kick_direction) };
 	double new_target[] = { ballposition[0] + new_bias[0],ballposition[1] + new_bias[1] };
+	double new_dir[] = { new_target[0] - cur_position[0], new_target[1] - cur_position[1] };
 	std::cout << "new target" << new_target[0] << " " << new_target[1] << std::endl;
 	std::cout << "ball position" << ballposition[0] << " " << ballposition[1] << std::endl;
-	if (judge_position(cur_position, new_target) > 0.07 && !dirty_kick_1)
+	if (judge_position(cur_position, target) <= judge_position(ballposition, target) && judge_position(cur_position, ballposition)<=0.2)
+	{
+		double new_dir2[] = {-new_dir[1], new_dir[0]};
+		play_syn(pMotion[change_direction(new_dir2)]);
+	}
+	else if (judge_position(cur_position, new_target) > 0.1 && !dirty_kick_toward)
 	{
 		std::cout << "on the way" << std::endl;
-		double new_dir[] = { new_target[0] - cur_position[0], new_target[1] - cur_position[1]};
+		
 		play_syn(pMotion[change_direction(new_dir)]);
 		
 		//return move(new_target);
-		return true;
+		//return true;
 	}
 	else
 	{
-		if (dirty_kick_1 == false)
+		if (dirty_kick_toward == false)
 		{
-			dirty_kick_1 = true;
+			dirty_kick_toward = true;
 		}
 		std::cout << "on the way2" << std::endl;
-		if (!move(ballposition))
+		if (current_motion != pMotion[shoot] || pMotion[shoot]->isOver())
 		{
-			//dirty_kick_1 = false;
-			play_syn(pMotion[shoot]);
-			if (judge_position(cur_position, ballposition) > 0.2)
+			double direct[] = { ballposition[0] - cur_position[0], ballposition[1] - cur_position[1] };
+			double new_ballposition[] = { ballposition[0] + 0.08 * (direct[1]) / vector_length(direct), ballposition[1] + 0.08 * (-direct[0]) / vector_length(direct) };
+			if (!move(new_ballposition) && !dirty_kick_2)
 			{
-				dirty_kick_1 = false;
+				//dirty_kick_1 = false;
+				const double* in_position = pGPS->getValues();
+				double current_position[] = { in_position[0], in_position[1] };
+				double direction[] = { ballposition[0] - current_position[0], ballposition[1] - current_position[1] };
+				dirty_kick_2 = true;
+				if (judge_position(current_position, ballposition) < 0.2)
+				{
+					std::cout << "ready to shoot" << std::endl;
+					play_syn(pMotion[shoot]);
+					std::cout << "shoot disturbed" << std::endl;
+					dirty_kick_2 = false;
+				}
+				/*else if (judge_position(current_position, ballposition) > 0.25 && change_direction(direction) == 0)
+				{
+					std::cout << "shoot disturbed" << std::endl;
+					dirty_kick_2 = false;
+				}*/
+				if (judge_position(current_position, ballposition) > 0.55)
+				{
+					std::cout << "redirect" << std::endl;
+					dirty_kick_toward = false;
+				}
+				return false;
 			}
-			return false;
-		}
-		else
-		{
-			return true;
+			else
+			{
+				return true;
+			}
 		}
 	}
 }
