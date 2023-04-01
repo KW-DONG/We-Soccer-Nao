@@ -3,7 +3,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.20901537710962897 0.20901748736560585 0.9553136982725037 1.616499366847821
-  position -0.16117606531066853 -7.870426616616225 3.7054022067183414
+  position -0.1611696133132029 -9.433720606477877 4.423874336509112
 }
 TexturedBackground {
   texture "stadium"
@@ -35,7 +35,7 @@ DEF red_0 Nao {
 DEF red_1 Nao {
   translation -2.35 0 0.334
   name "1"
-  controller "void"
+  controller "player_controller"
   channel -1
 }
 DEF red_2 Nao {
@@ -53,24 +53,28 @@ DEF red_3 Nao {
 DEF blue_0 Nao {
   translation 2.1 0 0.334
   name "4"
-  controller "void"
+  color 0 0 1
+  controller "player_controller"
   channel -1
 }
 DEF blue_1 Nao {
   translation -0.44 0 0.334
   name "5"
+  color 0 0 1
   controller "void"
   channel -1
 }
 DEF blue_2 Nao {
   translation 0.48 0 0.334
   name "6"
+  color 0 0 1
   controller "void"
   channel -1
 }
 DEF blue_3 Nao {
   translation 1.57 0 0.334
   name "7"
+  color 0 0 1
   controller "void"
   channel -1
 }
