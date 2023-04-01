@@ -51,7 +51,6 @@ std::map<int, std::string> mPlayMode = {
 
 SoccerNao::SoccerNao()
 {
-	
 	//read configuration
 	char value[25] = { 0 };
 	GetIniKeyString("SoccerField", "PitchLength", CONFIG_PATH, value);
@@ -112,6 +111,9 @@ SoccerNao::SoccerNao()
 	preceiver = getReceiver("receiver");
 	preceiver->enable(TIME_STEP);
 	preceiver->setChannel(-1);
+
+	std::cout << "==========Player " << playerId << " Report==========" << std::endl;
+
 }
 
 void SoccerNao::soccerPaser()
@@ -120,7 +122,7 @@ void SoccerNao::soccerPaser()
 	std::vector<std::pair<int, double>> _dist2Pair;
 	for (int i = 0; i < playerPositions.size(); i++)
 	{
-		double _dist2ToBall = DIST2D(playerPositions[i + playerTeam * teamPlayerNum], ballPosition);
+		double _dist2ToBall = DIST2D(playerPositions[i], ballPosition);
 		vPlayerInfo[i].dist2ToBall = _dist2ToBall;
 		_dist2Pair.push_back(std::make_pair(i, _dist2ToBall));
 	}
@@ -161,7 +163,11 @@ void SoccerNao::soccerPaser()
 					else
 					{
 						//dribble the ball to another place
-						getBestShootPlace(_playerId, vPlayerInfo[_playerId].actionParam);
+						setPlayerAction(_playerId, ACTION_KICK);
+
+						double vec[2] = { 0.0, 0.0 };
+						getBestShootPlace(_playerId, vec);
+						setPlayerActionParam(_playerId, vec);
 					}
 				}
 				//Team got the ball
@@ -365,7 +371,6 @@ void SoccerNao::soccerPaser()
 			}
 		}
 	}
-	
 }
 
 void SoccerNao::run()
@@ -382,10 +387,11 @@ void SoccerNao::run()
 
 		soccerPaser();
 
+		std::cout << ">>>>>>>>>>>>>>Player Id: " << playerId << "<<<<<<<<<<<<<<" << std::endl;
+		std::cout << ">> player id: " << playerId << std::endl;
 		std::cout << ">> game mode: " << mPlayMode[gameMode] << std::endl;
 		std::cout << ">> player action: " << vPlayerInfo[playerId].action << std::endl;
 		std::cout << ">> player action param: " << vPlayerInfo[playerId].actionParam[0] << " " << vPlayerInfo[playerId].actionParam[1] << std::endl;
-
 
 		//check if need stand 
 		if (need_stand())
