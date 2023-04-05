@@ -89,7 +89,8 @@ public:
 	bool is_between_2_point(double* p1, double* p2);
 	//bool g02(double* centre, double radius, double rad);//À≥ ±’Î
 	bool g03(double* centre, double radius, double rad);//ƒÊ ±’Î
-
+	bool move_with_avoid(double* target, std::vector<std::vector<double>>& playerPosition, bool crossBall=false, double* ballposition=nullptr);
+	bool is_on_the_way(double* target);
 
 protected:
 	void readPositionSensor();

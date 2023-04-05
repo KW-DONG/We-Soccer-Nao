@@ -396,7 +396,7 @@ void SoccerNao::run()
 		//check if need stand 
 		if (need_stand())
 			do_the_correct(0);
-		else if(current_motion != pMotion[8] || pMotion[8]->isOver())
+		if(current_motion != pMotion[8] || pMotion[8]->isOver())
 		{
 			if (vPlayerInfo[playerId].action == ACTION_RUN)
 			{
@@ -428,7 +428,6 @@ bool SoccerNao::receive_message()
 		//std::cout << "hello" << std::endl;
 		sign = true;
 		message = (char*)preceiver->getData();
-		//string model = "(GS (t 0.00) (pm BeforeKickOff))";s
 		if (check_message(message))
 		{
 			messages.push(message);
