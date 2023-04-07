@@ -3,7 +3,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.20901537710962897 0.20901748736560585 0.9553136982725037 1.616499366847821
-  position -0.1611696133132029 -9.433720606477877 4.423874336509112
+  position -0.16117858912787203 -7.258915485894779 3.4243586491216833
 }
 TexturedBackground {
   texture "stadium"
@@ -29,7 +29,7 @@ DEF Ball RobocupSoccerBall {
 DEF red_0 Nao {
   translation -3.23 0 0.334
   name "0"
-  controller "player_controller"
+  controller "void"
   channel -1
 }
 DEF red_1 Nao {
@@ -47,7 +47,7 @@ DEF red_2 Nao {
 DEF red_3 Nao {
   translation -1.69 0 0.334
   name "3"
-  controller "void"
+  controller "player_controller"
   channel -1
 }
 DEF blue_0 Nao {

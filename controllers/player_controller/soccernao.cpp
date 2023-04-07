@@ -593,12 +593,12 @@ inline bool SoccerNao::isStriker(int id)
 
 inline bool SoccerNao::isDefender(int id)
 {
-	return (id - teamPlayerNum * playerTeam) > STRIKER_NUM && id % teamPlayerNum != 0;
+	return (id - teamPlayerNum * playerTeam) >= STRIKER_NUM && (id + 1) % teamPlayerNum != 0;
 }
 
 inline bool SoccerNao::isGoalKeeper(int id)
 {
-	return id % teamPlayerNum == 0;
+	return (id + 1) % teamPlayerNum == 0;
 }
 
 inline bool SoccerNao::isTeamLeft(int id)
