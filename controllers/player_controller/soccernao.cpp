@@ -28,6 +28,8 @@
 #define MAX(x,y)	(x > y ? x : y)
 #define MIN(x,y)	(x < y ? x : y)
 
+#define TEST
+
 using namespace webots;
 
 std::map<int, std::string> mPlayMode = {
@@ -398,6 +400,14 @@ void SoccerNao::run()
 			do_the_correct(0);
 		if(current_motion != pMotion[8] || pMotion[8]->isOver())
 		{
+# ifdef TEST
+
+			//move_with_avoid(ballPosition, playerPositions);
+			for (int i = 0; i < playerPositions.size(); i++)
+			{
+				std::cout << playerPositions[i][0] << " " << playerPositions[i][1] << " " << playerPositions[i][2] << std::endl;
+			}
+# else
 			if (vPlayerInfo[playerId].action == ACTION_RUN)
 			{
 				move(vPlayerInfo[playerId].actionParam);
@@ -410,6 +420,7 @@ void SoccerNao::run()
 			{
 				kick_towards(vPlayerInfo[playerId].actionParam, ballPosition);
 			}
+#endif // TEST
 		}
 	}
 }
@@ -545,7 +556,14 @@ void SoccerNao::read_message()
 						//std::vector<double> o_position;
 						if (seq >= 0)
 						{
+							//double* position = new double[3];
 							getPosition(tail, &playerPositions[seq][0]);
+						/*	std::vector<double>* positions = new std::vector<double>;
+							for (int i = 0; i < 3; i++)
+							{
+								positions->push_back(position[i]);
+							}
+							playerPositions[seq] = *positions;*/
 						}
 					}
 				}

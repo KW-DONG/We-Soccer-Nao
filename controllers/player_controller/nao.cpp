@@ -61,9 +61,9 @@ const std::vector<std::string> vDistanceSensorName = {
 };
 
 const std::vector<std::string> vMotionName = {
-	"motion/HandWave.motion", "motionsd/Forwards.motion",
+	"motion/HandWave.motion", "motion/Forwards.motion",
 	"motion/TurnLeft60.motion", "motion/TurnRight60.motion",
-	"motion/TurnLeft40.motion", "motiond/TurnRight40.motion",
+	"motion/TurnLeft40.motion", "motionsd/TurnRight40.motion",
 	"motion/TurnLeft180.motion","motionsd/Shoot.motion",
 	"motion/StandUpFromFront.motion", "motion/TurnLeft20.motion",
 	"motion/TurnLeft20.motion"
@@ -533,13 +533,14 @@ bool Nao::g03(double* centre, double radius, double rad)
 
 bool Nao::move_with_avoid(double* target, std::vector<std::vector<double>>& playerPosition, bool crossBall, double* ballposition)
 {
+	std::cout << "moving avoid" << std::endl;
 	double target_2d[] = { target[0], target[1] };
 	const double* in_position = pGPS->getValues();
 	double cur_position[] = { in_position[0], in_position[1] };
 	bool need_turn = false;
 	if (judge_position(target_2d, cur_position) > 0.185)
 	{
-		std::cout << judge_position(target_2d, cur_position) << std::endl;
+		//std::cout << judge_position(target_2d, cur_position) << std::endl;
 		double direction[] = { target[0] - cur_position[0], target[1] - cur_position[1] };
 		int mode = change_direction(direction);
 		if (mode == forwards)
@@ -547,6 +548,7 @@ bool Nao::move_with_avoid(double* target, std::vector<std::vector<double>>& play
 			for (int i = 0; i < 8; i++)
 			{
 				std::vector<double> player_i = playerPosition[i];
+				std::cout << "player" << i << player_i[0] << std::endl;
 				double direction_i[] = { player_i[0], player_i[1] };
 				if (is_on_the_way(direction_i))
 				{
@@ -564,6 +566,7 @@ bool Nao::move_with_avoid(double* target, std::vector<std::vector<double>>& play
 			}
 			if (need_turn == true)
 			{
+				std::cout << "need turn" << std::endl;
 				mode = turn_left_40;
 			}
 		}
