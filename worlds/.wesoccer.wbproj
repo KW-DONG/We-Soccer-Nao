@@ -10,8 +10,8 @@ orthographicViewHeight: 1
 textFiles: 0 "controllers/player_controller/player_controller.cpp"
 globalOptionalRendering: CoordinateSystem
 consoles: Console:All:All
-renderingDevicePerspectives: 0:CameraBottom;1;0.266667;0;0
-renderingDevicePerspectives: 0:CameraTop;1;0.266667;0;0
+renderingDevicePerspectives: 0:CameraBottom;1;1;0;0
+renderingDevicePerspectives: 0:CameraTop;1;1;0;0
 renderingDevicePerspectives: 1:CameraBottom;1;1;0;0
 renderingDevicePerspectives: 1:CameraTop;1;1;0;0
 renderingDevicePerspectives: 2:CameraBottom;1;1;0;0

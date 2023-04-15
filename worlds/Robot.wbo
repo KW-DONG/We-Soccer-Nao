@@ -1,33 +1,6 @@
-#VRML_SIM R2022a utf8
-WorldInfo {
-}
-Viewpoint {
-  orientation 0.3396217414551123 0.3108483450519765 -0.8877107519397546 1.7769485462426344
-  position -1.498387674688551 4.003393158459323 3.5146699982210086
-}
-TexturedBackground {
-  texture "stadium"
-}
+#VRML_OBJ R2022a utf8
 Robot {
-  children [
-    Receiver {
-    }
-    Emitter {
-      channel -1
-    }
-  ]
-  name "Referee"
-  controller "referee_controller"
-  supervisor TRUE
-}
-RobocupSoccerField {
-  size "kid"
-}
-DEF Ball RobocupSoccerBall {
-  translation 0 0 0.1
-}
-DEF red_0 Robot {
-  translation -3.11 0 0.334
+  translation 0 0 0.334
   children [
     DEF Body Transform {
       translation 0 0 0.02
@@ -35,7 +8,6 @@ DEF red_0 Robot {
         Shape {
           appearance Appearance {
             material Material {
-              diffuseColor 1 0.4 0.4
             }
           }
           geometry Capsule {
@@ -48,7 +20,6 @@ DEF red_0 Robot {
     DEF GPS GPS {
     }
     DEF RECEIVER Receiver {
-      channel -1
     }
     DEF EMITTER Emitter {
     }
@@ -1511,7 +1482,7 @@ DEF red_0 Robot {
       ]
     }
   ]
-  name "0"
+  name "NAO"
   model "NAO_H25_V50"
   contactMaterial "NAO material"
   boundingObject Transform {
@@ -1535,54 +1506,5 @@ DEF red_0 Robot {
       1.43116e-05 0.000155191 -2.70793e-05
     ]
   }
-  controller "player_controller"
-}
-DEF red_1 Nao {
-  translation -2.35 0 0.334
-  name "1"
-  controller "void"
-  channel -1
-}
-DEF red_2 Nao {
-  translation -0.86 0 0.334
-  name "2"
-  controller "void"
-  channel -1
-}
-DEF red_3 Nao {
-  translation -1.69 0 0.334
-  name "3"
-  controller "player_controller"
-  channel -1
-}
-DEF blue_0 Nao {
-  translation 2.1 0 0.334
-  name "4"
-  color 0 0 1
-  controller "void"
-  channel -1
-}
-DEF blue_1 Nao {
-  translation -0.44 0 0.334
-  name "5"
-  color 0 0 1
-  controller "void"
-  channel -1
-}
-DEF blue_2 Nao {
-  translation 0.48 0 0.334
-  name "6"
-  color 0 0 1
-  controller "void"
-  channel -1
-}
-DEF blue_3 Nao {
-  translation 1.57 0 0.334
-  name "7"
-  color 0 0 1
-  controller "void"
-  channel -1
-}
-TexturedBackgroundLight {
-  texture "stadium"
+  controller "nao_demo"
 }
