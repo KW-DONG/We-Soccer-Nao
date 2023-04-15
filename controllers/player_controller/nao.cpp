@@ -61,7 +61,7 @@ const std::vector<std::string> vDistanceSensorName = {
 };
 
 const std::vector<std::string> vMotionName = {
-	"motion/HandWave.motion", "motion/Forwards.motion",
+	"motion/Forwards.motion",
 	"motion/TurnLeft60.motion", "motion/TurnRight60.motion",
 	"motion/TurnLeft40.motion", "motionsd/TurnRight40.motion",
 	"motion/TurnLeft180.motion","motionsd/Shoot.motion",
@@ -145,6 +145,7 @@ Nao::Nao()
 	dirty_kick_toward = false;
 	dirty_kick_2 = false;
 	dirtu_circle_1 = false;
+	dirty_move_avoid = false;
 	pMotion[turn_right_20]->setReverse(true);
 }
 
@@ -300,8 +301,6 @@ bool Nao::play_syn(Motion* mo)
 	if (current_motion)
 	{
 		current_motion->stop();
-		//current_motion = NULL;
-
 	}
 	mo->play();
 	current_motion = mo;
@@ -311,7 +310,7 @@ bool Nao::play_syn(Motion* mo)
 		step(32);
 
 	} while (!mo->isOver());*/
-	std::cout << "play true" << std::endl;
+	//std::cout << "play true" << std::endl;
 	//current_motion = NULL;
 	return true;
 }
@@ -534,67 +533,68 @@ bool Nao::g03(double* centre, double radius, double rad)
 bool Nao::move_with_avoid(double* target, std::vector<std::vector<double>>& playerPosition, bool crossBall, double* ballposition)
 {
 	std::cout << "moving avoid" << std::endl;
-	double target_2d[] = { target[0], target[1] };
+	int turn_left = 0, turn_right = 0;
+	int index_left = 0, index_right = 0;
 	const double* in_position = pGPS->getValues();
-	double cur_position[] = { in_position[0], in_position[1] };
-	bool need_turn = false;
-	if (judge_position(target_2d, cur_position) > 0.185)
+	for (int i = 0; i < playerPosition.size(); i++)
 	{
-		//std::cout << judge_position(target_2d, cur_position) << std::endl;
-		double direction[] = { target[0] - cur_position[0], target[1] - cur_position[1] };
-		int mode = change_direction(direction);
-		if (mode == forwards)
+		if (is_on_the_way(&playerPosition[i][0], target) == turn_left_20)
 		{
-			for (int i = 0; i < 8; i++)
-			{
-				std::vector<double> player_i = playerPosition[i];
-				std::cout << "player" << i << player_i[0] << std::endl;
-				double direction_i[] = { player_i[0], player_i[1] };
-				if (is_on_the_way(direction_i))
-				{
-					need_turn = true;
-					break;
-				}
-			}
-			if (crossBall && ballposition)
-			{
-				double direction_b[] = { ballposition[0], ballposition[1] };
-				if (is_on_the_way(direction_b))
-				{
-					need_turn = true;
-				}
-			}
-			if (need_turn == true)
-			{
-				std::cout << "need turn" << std::endl;
-				mode = turn_left_40;
-			}
+			turn_left++;
+			index_right = i;
 		}
-		play_syn(pMotion[mode]);
-		need_turn = false;
-		return true;
+		else if (is_on_the_way(&playerPosition[i][0], target) == turn_right_20)
+		{
+			turn_right++;
+			index_left = i;
+		}
 	}
-	return false;
+	std::cout << turn_left << " " << turn_right << std::endl;
+	if (turn_left == 0 && turn_right == 0)
+	{
+		//dirty_move_avoid = false;
+		std::cout << "normal move" << std::endl;
+		return move(target);
+	}
+	else
+	{
+		double direction[] = { target[0] - playerPosition[index_right][0], target[1] - playerPosition[index_right][1] };
+		double length = vector_length(direction);
+		double new_target[] = { playerPosition[index_right][0] + direction[1] / length, playerPosition[index_right][1] - direction[0] / length };
+		std::cout << "avoid move" << std::endl;
+		dirty_move_avoid = move(new_target);
+	}
+	
 }
 
-bool Nao::is_on_the_way(double* target)
+int Nao::is_on_the_way(double* bposition, double* target)
 {
 	const double* in_position = pGPS->getValues();
 	double cur_position[] = { in_position[0], in_position[1] };
-	double direction[] = { target[0] - cur_position[0], target[1] - cur_position[1] };
+	double direction[] = { bposition[0] - cur_position[0], bposition[1] - cur_position[1] };
 	double direct_angle = acos((direction[0]) / vector_length(direction));
 	direct_angle = direction[1] > 0 ? std::abs(direct_angle) : -std::abs(direct_angle);
 	double* rotation = (double*)pInertialUnit->getRollPitchYaw();
 	double cur_rotation = rotation[2];
-	if (ang_minus(cur_rotation, direct_angle) > -(PI / 18) && ang_minus(cur_rotation, direct_angle) < (PI / 18))
+	double directions[] = { target[0] - cur_position[0], target[1] - cur_position[1] };
+	double directs_angle = acos((directions[0]) / vector_length(directions));
+	directs_angle = directions[1] > 0 ? std::abs(directs_angle) : -std::abs(directs_angle);
+	if (ang_minus(cur_rotation, direct_angle) > -(PI / 9) && ang_minus(cur_rotation, direct_angle) < (PI / 9))
 	{
 		//play_syn(pMotion[forwards]);
 		//std::cout << "go straight" << std::endl;
 		
-		if (vector_length(direction) < 0.5)
+		if (vector_length(direction) < 0.5 && current_motion == pMotion[forwards])
 		{
-			return true;
+			return turn_right_20;
 		}
 	}
-	return false;
+	else if (ang_minus(directs_angle, direct_angle) < (PI / 9) && ang_minus(directs_angle, direct_angle) > 0)
+	{
+		if (vector_length(direction) < 0.5 && current_motion == pMotion[forwards])
+		{
+			return turn_left_20;
+		}
+	}
+	return forwards;
 }

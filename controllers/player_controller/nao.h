@@ -65,7 +65,7 @@ enum {
 };
 
 enum {
-	hand_wave, forwards, turn_left_60, turn_right_60, turn_left_40, turn_right_40,
+	forwards, turn_left_60, turn_right_60, turn_left_40, turn_right_40,
 	turn_left_180, shoot, standup_fromfront, turn_left_20, turn_right_20
 };
 
@@ -90,7 +90,7 @@ public:
 	//bool g02(double* centre, double radius, double rad);//À≥ ±’Î
 	bool g03(double* centre, double radius, double rad);//ƒÊ ±’Î
 	bool move_with_avoid(double* target, std::vector<std::vector<double>>& playerPosition, bool crossBall=false, double* ballposition=nullptr);
-	bool is_on_the_way(double* target);
+	int is_on_the_way(double* bposition, double* target);
 
 protected:
 	void readPositionSensor();
@@ -112,6 +112,7 @@ protected:
 	bool dirty_kick_toward;
 	bool dirty_kick_2;
 	bool dirtu_circle_1;
+	bool dirty_move_avoid;
 	//Motion hand_wave;
 	//Motion forwards;
 	//Motion backwards;

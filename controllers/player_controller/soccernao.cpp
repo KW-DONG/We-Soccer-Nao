@@ -402,11 +402,11 @@ void SoccerNao::run()
 		{
 # ifdef TEST
 
-			//move_with_avoid(ballPosition, playerPositions);
-			for (int i = 0; i < playerPositions.size(); i++)
+			move_with_avoid(ballPosition, playerPositions);
+			/*for (int i = 0; i < playerPositions.size(); i++)
 			{
 				std::cout << playerPositions[i][0] << " " << playerPositions[i][1] << " " << playerPositions[i][2] << std::endl;
-			}
+			}*/
 # else
 			if (vPlayerInfo[playerId].action == ACTION_RUN)
 			{
@@ -518,6 +518,7 @@ void SoccerNao::read_message()
 		else if (sHeader == "See")
 		{
 			int sign = 0;
+			int seq = -1;
 			for (std::sregex_iterator it(sBody.begin(), sBody.end(), pattern2), end_it; it != end_it; ++it)
 			{
 				std::string info = it->str();
@@ -537,13 +538,13 @@ void SoccerNao::read_message()
 					std::string tail = info.substr(first_cut + 1);
 					if (title == "ccs")
 					{
-						ball_position.clear();
+						//ball_position.clear();
 						getPosition(tail, ballPosition);
 					}
 				}
 				else if (sign == 1)
 				{
-					int seq = -1;
+					
 					size_t first_cut = info.find(" ");
 					std::string title = info.substr(0, first_cut);
 					std::string tail = info.substr(first_cut + 1);
@@ -556,9 +557,14 @@ void SoccerNao::read_message()
 						//std::vector<double> o_position;
 						if (seq >= 0)
 						{
-							//double* position = new double[3];
+							double* position = new double[3];
+							size_t first_cut_ = info.find(" ");
+							std::string title_ = info.substr(0, first_cut);
+							std::string tail = info.substr(first_cut + 1);
 							getPosition(tail, &playerPositions[seq][0]);
-						/*	std::vector<double>* positions = new std::vector<double>;
+							/*std::cout << "other players:" << std::endl;
+							std::cout << position[0] << " " << position[1] << " " << position[2] << std::endl;*/
+							/*std::vector<double>* positions = new std::vector<double>;
 							for (int i = 0; i < 3; i++)
 							{
 								positions->push_back(position[i]);
