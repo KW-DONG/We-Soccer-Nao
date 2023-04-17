@@ -66,7 +66,8 @@ enum {
 
 enum {
 	forwards, turn_left_60, turn_right_60, turn_left_40, turn_right_40,
-	turn_left_180, shoot, standup_fromfront, turn_left_20, turn_right_20
+	turn_left_180, shoot, standup_fromfront, turn_left_20, turn_right_20,
+	side_step_right
 };
 
 enum {
@@ -85,11 +86,11 @@ public:
 	double change_angle(double ang);
 	double ang_minus(double ang1, double ang2);
 	bool kick_towards(double* target, double* ballposition);
-	int change_direction(double* direction);
+	int change_direction(double* target);
 	bool is_between_2_point(double* p1, double* p2);
 	//bool g02(double* centre, double radius, double rad);//À≥ ±’Î
 	bool g03(double* centre, double radius, double rad);//ƒÊ ±’Î
-	bool move_with_avoid(double* target, std::vector<std::vector<double>>& playerPosition, bool crossBall=false, double* ballposition=nullptr);
+	bool move_with_avoid(int playerId, double* target, std::vector<std::vector<double>>& playerPosition, bool crossBall=false, double* ballposition=nullptr);
 	int is_on_the_way(double* bposition, double* target);
 
 protected:
