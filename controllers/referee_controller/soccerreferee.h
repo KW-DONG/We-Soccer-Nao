@@ -119,8 +119,6 @@ protected:
 
 private:
 	std::vector<_Node> vPlayerNodes;
-	//std::vector<_Node> vPlayerLeftNodes;
-	//std::vector<_Node> vPlayerRightNodes;
 	Emitter* pEmitter;
 	Receiver* pReceiver;
 	_Node ballNode;
