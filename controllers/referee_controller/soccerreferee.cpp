@@ -486,12 +486,26 @@ void SoccerReferee::initPlayerPosition()
 			startPoint[1] = 0;
 			startPoint[2] = robotZ;
 		}
-		else
+		//striker
+		else if (i == 0)
 		{
-			startPoint[0] = -centreD * 0.5; 
-			startPoint[1] = (teamPlayerNum - 1) * 0.25 - i * 0.5;
+			startPoint[0] = -centreD * 0.5;
+			startPoint[1] = 0;
 			startPoint[2] = robotZ;
 		}
+		else if (i == 1)
+		{
+			startPoint[0] = -centreD * 0.5;
+			startPoint[1] = 2;
+			startPoint[2] = robotZ;
+		}
+		else if (i == 2)
+		{
+			startPoint[0] = -centreD * 0.5;
+			startPoint[1] = -2;
+			startPoint[2] = robotZ;
+		}
+
 		vPlayerNodes[i].pNode->getField("rotation")->setSFRotation(startRot);
 		vPlayerNodes[i].pNode->getField("translation")->setSFVec3f(startPoint);
 	}
@@ -508,12 +522,26 @@ void SoccerReferee::initPlayerPosition()
 			startPoint[1] = 0;
 			startPoint[2] = robotZ;
 		}
-		else
+		//striker
+		else if (i == teamPlayerNum)
 		{
 			startPoint[0] = centreD * 0.5;
-			startPoint[1] = (teamPlayerNum - 1) * 0.25 - (i - teamPlayerNum)  * 0.5;
+			startPoint[1] = 0;
 			startPoint[2] = robotZ;
 		}
+		else if (i == teamPlayerNum + 1)
+		{
+			startPoint[0] = centreD * 0.5;
+			startPoint[1] = 2;
+			startPoint[2] = robotZ;
+		}
+		else if (i == teamPlayerNum + 2)
+		{
+			startPoint[0] = centreD * 0.5;
+			startPoint[1] = -2;
+			startPoint[2] = robotZ;
+		}
+
 		vPlayerNodes[i].pNode->getField("rotation")->setSFRotation(startRot);
 		vPlayerNodes[i].pNode->getField("translation")->setSFVec3f(startPoint);
 	}
