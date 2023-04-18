@@ -496,13 +496,13 @@ void SoccerReferee::initPlayerPosition()
 		else if (i == 1)
 		{
 			startPoint[0] = -centreD * 0.5;
-			startPoint[1] = 2;
+			startPoint[1] = 1;
 			startPoint[2] = robotZ;
 		}
 		else if (i == 2)
 		{
 			startPoint[0] = -centreD * 0.5;
-			startPoint[1] = -2;
+			startPoint[1] = -1;
 			startPoint[2] = robotZ;
 		}
 
@@ -532,13 +532,13 @@ void SoccerReferee::initPlayerPosition()
 		else if (i == teamPlayerNum + 1)
 		{
 			startPoint[0] = centreD * 0.5;
-			startPoint[1] = 2;
+			startPoint[1] = 1;
 			startPoint[2] = robotZ;
 		}
 		else if (i == teamPlayerNum + 2)
 		{
 			startPoint[0] = centreD * 0.5;
-			startPoint[1] = -2;
+			startPoint[1] = -1;
 			startPoint[2] = robotZ;
 		}
 
