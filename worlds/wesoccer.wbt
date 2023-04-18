@@ -2048,6 +2048,7 @@ DEF red_1 Robot {
     DEF GPS GPS {
     }
     DEF RECEIVER Receiver {
+      channel -1
     }
     DEF EMITTER Emitter {
     }
@@ -3534,7 +3535,6 @@ DEF red_1 Robot {
       1.43116e-05 0.000155191 -2.70793e-05
     ]
   }
-  controller "player_controller"
 }
 DEF red_2 Robot {
   translation -2.14 0 0.334
@@ -3558,6 +3558,7 @@ DEF red_2 Robot {
     DEF GPS GPS {
     }
     DEF RECEIVER Receiver {
+      channel -1
     }
     DEF EMITTER Emitter {
     }
@@ -5044,7 +5045,6 @@ DEF red_2 Robot {
       1.43116e-05 0.000155191 -2.70793e-05
     ]
   }
-  controller "player_controller"
 }
 DEF red_3 Robot {
   translation -2.73 0 0.334
@@ -5068,6 +5068,7 @@ DEF red_3 Robot {
     DEF GPS GPS {
     }
     DEF RECEIVER Receiver {
+      channel -1
     }
     DEF EMITTER Emitter {
     }
@@ -6554,7 +6555,6 @@ DEF red_3 Robot {
       1.43116e-05 0.000155191 -2.70793e-05
     ]
   }
-  controller "player_controller"
 }
 DEF blue_0 Robot {
   translation 0.97 -1.35334e-06 0.334
@@ -6579,6 +6579,7 @@ DEF blue_0 Robot {
     DEF GPS GPS {
     }
     DEF RECEIVER Receiver {
+      channel -1
     }
     DEF EMITTER Emitter {
     }
@@ -8065,7 +8066,6 @@ DEF blue_0 Robot {
       1.43116e-05 0.000155191 -2.70793e-05
     ]
   }
-  controller "player_controller"
 }
 DEF blue_1 Robot {
   translation 1.49 -3.95385e-06 0.334
@@ -8090,6 +8090,7 @@ DEF blue_1 Robot {
     DEF GPS GPS {
     }
     DEF RECEIVER Receiver {
+      channel -1
     }
     DEF EMITTER Emitter {
     }
@@ -9576,7 +9577,6 @@ DEF blue_1 Robot {
       1.43116e-05 0.000155191 -2.70793e-05
     ]
   }
-  controller "player_controller"
 }
 DEF blue_2 Robot {
   translation 2.03 -5.38683e-06 0.334
@@ -9601,6 +9601,7 @@ DEF blue_2 Robot {
     DEF GPS GPS {
     }
     DEF RECEIVER Receiver {
+      channel -1
     }
     DEF EMITTER Emitter {
     }
@@ -11087,7 +11088,6 @@ DEF blue_2 Robot {
       1.43116e-05 0.000155191 -2.70793e-05
     ]
   }
-  controller "player_controller"
 }
 DEF blue_3 Robot {
   translation 2.75 -7.29751e-06 0.334
@@ -11112,6 +11112,7 @@ DEF blue_3 Robot {
     DEF GPS GPS {
     }
     DEF RECEIVER Receiver {
+      channel -1
     }
     DEF EMITTER Emitter {
     }
@@ -12598,7 +12599,6 @@ DEF blue_3 Robot {
       1.43116e-05 0.000155191 -2.70793e-05
     ]
   }
-  controller "player_controller"
 }
 TexturedBackgroundLight {
   texture "stadium"
