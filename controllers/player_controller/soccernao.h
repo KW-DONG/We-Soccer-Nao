@@ -94,7 +94,7 @@ public:
 	bool isClosest2BallTeam(int id);
 	bool isClosest2BallDefender(int id);
 	bool isPlayerReach(int id, Vec2D vec);
-	bool isTeamGotBall();
+	bool isTeamGotBall(int id);
 	bool isBallInPenaltyArea(int id);
 
 	//strategy
