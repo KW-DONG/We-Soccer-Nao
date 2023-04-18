@@ -263,7 +263,15 @@ int Nao::change_direction(double* target)
 	direct_angle = direction[1] > 0 ? std::abs(direct_angle) : -std::abs(direct_angle);
 	double* rotation = (double*)pInertialUnit->getRollPitchYaw();
 	double cur_rotation = rotation[2];
-	cur_rotation = cur_rotation > 0 ? cur_rotation + PI / 9 : cur_rotation - PI / 9;
+	//cur_rotation = cur_rotation > 0 ? cur_rotation + PI / 9 : cur_rotation - PI / 9;
+	if (cur_rotation > PI / 9 && cur_rotation < 8 * PI / 9)
+	{
+		cur_rotation += PI / 9;
+	}
+	else if (cur_rotation < -PI / 9 && cur_rotation < -8 * PI / 9)
+	{
+		cur_rotation -= PI / 9;
+	}
 	//if (ang_minus(cur_rotation, direct_angle) > -(PI / 9) && ang_minus(cur_rotation, direct_angle) < (PI / 9))
 	//{
 	//	//play_syn(pMotion[forwards]);
