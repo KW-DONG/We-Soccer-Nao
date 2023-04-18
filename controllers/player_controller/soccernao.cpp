@@ -28,8 +28,6 @@
 #define MAX(x,y)	(x > y ? x : y)
 #define MIN(x,y)	(x < y ? x : y)
 
-#define TEST
-
 using namespace webots;
 
 std::map<int, std::string> mPlayMode = {
@@ -398,7 +396,7 @@ void SoccerNao::run()
 		//check if need stand 
 		if (need_stand())
 			do_the_correct(0);
-		if(current_motion != pMotion[8] || pMotion[8]->isOver())
+		if(current_motion != pMotion[7] || pMotion[7]->isOver())
 		{
 # ifdef TEST
 
