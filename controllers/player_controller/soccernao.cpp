@@ -764,24 +764,24 @@ void SoccerNao::getDefenderAttackPosition(int id, Vec2D pos)
 {
 	if (id == 1)
 	{
-		pos[0] = ballPosition[0] - 3;
-		pos[1] = ballPosition[1] + 3;
+		pos[0] = ballPosition[0] - 1;
+		pos[1] = ballPosition[1] + 1;
 
 	}
 	else if (id == 2)
 	{
-		pos[0] = ballPosition[0] - 3;
-		pos[1] = ballPosition[1] - 3;
+		pos[0] = ballPosition[0] - 1;
+		pos[1] = ballPosition[1] - 1;
 	}
 	else if (id == teamPlayerNum + 1)
 	{
-		pos[0] = ballPosition[0] + 3;
-		pos[1] = ballPosition[1] + 3;
+		pos[0] = ballPosition[0] + 1;
+		pos[1] = ballPosition[1] + 1;
 	}
 	else if (id == teamPlayerNum + 2)
 	{
-		pos[0] = ballPosition[0] + 3;
-		pos[1] = ballPosition[1] - 3;
+		pos[0] = ballPosition[0] + 1;
+		pos[1] = ballPosition[1] - 1;
 	}
 }
 
